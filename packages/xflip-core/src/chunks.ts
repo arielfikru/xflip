@@ -147,12 +147,9 @@ const readChunkType = (reader: BytesReader): { type: string; critical: boolean }
     throw new XflipParseError(`chunk type "${type}" does not start with an ASCII letter`, offset);
   }
 
-  // Spec v0.2 §3.3 case rule says uppercase-first = critical, lowercase =
-  // ancillary, BUT Appendix A explicitly lists `META` as ancillary despite
-  // its uppercase 'M'. To honour the spec's intent rather than its rule,
-  // we resolve criticality by explicit registry first; only fall back to
-  // the case rule for types not in either registry. An unknown uppercase
-  // type fails per §3.3 ("decoder MUST fail on unrecognized critical").
+  // Spec v0.2 §3.3: Appendix A registry is authoritative; case rule is
+  // a fallback for unknown types only. `META` is registered Ancillary
+  // despite its uppercase 'M'.
   if (KNOWN_CRITICAL.has(type)) {
     return { type, critical: true };
   }

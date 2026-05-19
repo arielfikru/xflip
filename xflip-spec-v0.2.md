@@ -19,6 +19,10 @@ reference only; v0.2 is the authoritative spec for format version 1.1.
 - Format version bumped from 1.0 to 1.1 (minor; backward compatible)
 - v1.0 decoders MUST be able to read v1.1 files (ignoring new ancillary chunks)
 - Fixed: `response_len` widened from uint8 to uint16 (allows >255-byte JSON)
+- Clarified: Section 3.3 — Appendix A registry is authoritative for
+  criticality; case-of-first-letter is a fallback for unknown types only.
+  Resolves the apparent conflict between the case rule and `META` being
+  listed as Ancillary.
 
 ## 1. Overview
 
@@ -101,13 +105,23 @@ CRC32 of critical chunks; MAY validate ancillary chunks.
 
 ### 3.3 Critical vs Ancillary Chunks
 
-- **Uppercase first letter** → Critical. Decoder MUST understand it. If
-  unrecognized, decoder MUST fail.
-- **Lowercase first letter** → Ancillary. Decoder MAY ignore safely if
-  unrecognized. File remains valid.
+Criticality is determined by the **registry in Appendix A**, which is
+authoritative. The case-of-first-letter rule below is a fallback that
+applies **only to unknown chunk types not present in Appendix A**.
+
+- **Registry (authoritative):** Each chunk type listed in Appendix A is
+  marked Critical or Ancillary explicitly.
+- **Fallback rule for unknown types:**
+  - **Uppercase first letter** → Critical. Decoder MUST fail.
+  - **Lowercase first letter** → Ancillary. Decoder MAY safely ignore.
 
 Critical chunks in v1.1: `HEAD`, `FRNT`, `BACK`, `ENDX`.
 Ancillary chunks in v1.1: `META`, `tHmb`, `fLip`, `sIgn`, `eDge`, `fLyr`, `bLyr`, `hEfx`.
+
+**Note:** `META` begins with an uppercase letter but is explicitly registered
+as Ancillary in Appendix A; the registry wins. Future registered types
+SHOULD follow the case rule to avoid this kind of override, but
+implementations MUST consult the registry first.
 
 ### 3.4 Chunk Ordering
 
