@@ -1,6 +1,7 @@
 export type { ParsedChunk, ParsedFile, ParseOptions } from './chunks.js';
 export { parseChunks } from './chunks.js';
 export { crc32, crc32Concat } from './crc32.js';
+export { decode } from './decode.js';
 
 export {
   XflipCrcError,

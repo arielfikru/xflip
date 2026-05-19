@@ -73,6 +73,8 @@ export interface XflipFile {
   front: Uint8Array;
   /** Raw bytes of the back image file. */
   back: Uint8Array;
-  /** Optional ancillary chunks preserved as raw payloads, keyed by chunk type. */
-  ancillary?: ReadonlyMap<ChunkType, Uint8Array>;
+  /** Optional ancillary chunks preserved as raw payloads, keyed by chunk type.
+   *  Keys are 4-character ASCII tags; both registered (`META`, `tHmb`, ...)
+   *  and unknown lowercase-first tags are preserved verbatim. */
+  ancillary?: ReadonlyMap<string, Uint8Array>;
 }
