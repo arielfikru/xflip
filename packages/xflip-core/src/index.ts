@@ -1,3 +1,5 @@
+export { crc32, crc32Concat } from './crc32.js';
+
 export {
   XflipCrcError,
   XflipEncodeError,
