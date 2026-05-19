@@ -35,10 +35,7 @@ for a standalone CSS holographic effect proof of concept.
 
 ## Project Documents
 
-- [`SOW.md`](./SOW.md) — statement of work / project charter
-- [`AGENTS.md`](./AGENTS.md) — implementation guide for AI coding agents
-- [`CLAUDE.md`](./CLAUDE.md) — autonomous continuation protocol
-- [`PROGRESS.md`](./PROGRESS.md) — current project state
+- [`AGENTS.md`](./AGENTS.md) — implementation guide for AI coding agents and human contributors
 
 ## Development
 

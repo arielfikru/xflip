@@ -50,3 +50,8 @@ tests/fixtures/generated/
 # Misc
 *.tmp
 .tmp/
+
+# Maintainer-private docs (never push to public remote)
+SOW.md
+CLAUDE.md
+PROGRESS.md

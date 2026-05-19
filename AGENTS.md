@@ -55,9 +55,14 @@ Before writing any code, the agent MUST read:
 
 1. `xflip-spec-v0.2.md` — Format specification (authoritative, self-contained source of truth)
 2. This file (`AGENTS.md`) — Implementation conventions
-3. `PROGRESS.md` — Current project state and next task pointer
-4. `CLAUDE.md` — Autonomous continuation protocol
-5. The relevant package's `README.md` if it exists
+3. The relevant package's `README.md` if it exists
+
+If working in the maintainer's own clone, also read (these are local-only and
+gitignored, not present in fresh contributor checkouts):
+
+- `PROGRESS.md` — current task pointer and per-phase task breakdowns
+- `CLAUDE.md` — autonomous continuation protocol for the AI assistant
+- `SOW.md` — personal project charter
 
 `xflip-spec-v0.1.md` is **legacy / historical only**. Do not read it for
 implementation. v0.2 is fully self-contained.
