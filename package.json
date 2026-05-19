@@ -1,0 +1,45 @@
+{
+  "name": "xflip-monorepo",
+  "version": "0.0.0",
+  "private": true,
+  "description": "xflip — open image format for two-sided visual content with optional holographic effects",
+  "license": "MIT",
+  "author": "arielfikru <arielfikrua@gmail.com>",
+  "repository": {
+    "type": "git",
+    "url": "git+ssh://git@github.com/arielfikru/xflip.git"
+  },
+  "homepage": "https://github.com/arielfikru/xflip#readme",
+  "bugs": {
+    "url": "https://github.com/arielfikru/xflip/issues"
+  },
+  "type": "module",
+  "engines": {
+    "node": ">=20",
+    "pnpm": ">=9"
+  },
+  "packageManager": "pnpm@11.0.8",
+  "scripts": {
+    "build": "pnpm -r --filter=\"./packages/*\" run build",
+    "test": "vitest run --passWithNoTests",
+    "test:watch": "vitest",
+    "test:coverage": "vitest run --coverage --passWithNoTests",
+    "typecheck": "pnpm -r --filter=\"./packages/*\" --if-present run typecheck",
+    "lint": "biome check .",
+    "lint:fix": "biome check --write .",
+    "format": "biome format --write .",
+    "fuzz": "pnpm -r --filter=\"./packages/*\" run --if-present fuzz",
+    "size": "size-limit",
+    "clean": "pnpm -r exec rm -rf dist .turbo coverage && rm -rf node_modules/.cache"
+  },
+  "devDependencies": {
+    "@biomejs/biome": "^2.0.0",
+    "@types/node": "^20.14.0",
+    "@vitest/coverage-v8": "^2.1.0",
+    "size-limit": "^11.1.0",
+    "@size-limit/preset-small-lib": "^11.1.0",
+    "tsup": "^8.3.0",
+    "typescript": "^5.6.0",
+    "vitest": "^2.1.0"
+  }
+}

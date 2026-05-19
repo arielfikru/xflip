@@ -1,0 +1,52 @@
+# Dependencies
+node_modules/
+.pnpm-store/
+
+# Build output
+dist/
+build/
+*.tsbuildinfo
+.turbo/
+.cache/
+
+# Coverage
+coverage/
+*.lcov
+.nyc_output/
+
+# Test output
+test-results/
+playwright-report/
+playwright/.cache/
+
+# Logs
+*.log
+npm-debug.log*
+pnpm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Editor / OS
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/*
+!.vscode/extensions.json
+!.vscode/settings.json
+*.swp
+*.swo
+
+# Env
+.env
+.env.local
+.env.*.local
+
+# Generated fixtures (regeneratable)
+tests/fixtures/generated/
+
+# Vite / build caches
+.vite/
+
+# Misc
+*.tmp
+.tmp/
