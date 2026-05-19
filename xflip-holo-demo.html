@@ -1,0 +1,524 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>xflip Holographic Demo</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  
+  body {
+    background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
+    min-height: 100vh;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    color: #e0e0e0;
+    padding: 20px;
+    overflow-x: hidden;
+  }
+  
+  .container {
+    max-width: 1200px;
+    margin: 0 auto;
+    display: grid;
+    grid-template-columns: 1fr 320px;
+    gap: 30px;
+    align-items: start;
+  }
+  
+  @media (max-width: 900px) {
+    .container { grid-template-columns: 1fr; }
+  }
+  
+  h1 {
+    grid-column: 1 / -1;
+    font-size: 28px;
+    margin-bottom: 8px;
+    background: linear-gradient(90deg, #ffd700, #ff6b9d, #00d4ff);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+  
+  .subtitle {
+    grid-column: 1 / -1;
+    font-size: 14px;
+    color: #999;
+    margin-bottom: 20px;
+  }
+  
+  .stage {
+    perspective: 1500px;
+    perspective-origin: center;
+    height: 600px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: grab;
+  }
+  
+  .stage:active { cursor: grabbing; }
+  
+  .card {
+    position: relative;
+    width: 320px;
+    height: 460px;
+    transform-style: preserve-3d;
+    transition: transform 0.1s ease-out;
+    border-radius: 16px;
+    overflow: hidden;
+    box-shadow: 
+      0 25px 50px rgba(0,0,0,0.5),
+      0 0 60px rgba(255, 215, 0, 0.2);
+  }
+  
+  .layer {
+    position: absolute;
+    inset: 0;
+    border-radius: 16px;
+    overflow: hidden;
+    pointer-events: none;
+  }
+  
+  /* Layer 1: Base artwork (Zapdos illustration via SVG-like gradient) */
+  .layer-base {
+    background: 
+      radial-gradient(ellipse at 50% 40%, #ffd700 0%, #ff9500 30%, #8b4500 70%, #2a1500 100%);
+  }
+  
+  .layer-base::before {
+    content: '⚡';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    font-size: 180px;
+    color: #fff8a0;
+    text-shadow: 
+      0 0 30px #ffd700,
+      0 0 60px #ff9500,
+      0 0 90px #ff6b00;
+    filter: drop-shadow(0 0 20px rgba(255, 215, 0, 0.8));
+  }
+  
+  .layer-base::after {
+    content: 'Zapdos';
+    position: absolute;
+    top: 20px;
+    left: 20px;
+    font-size: 22px;
+    font-weight: bold;
+    color: white;
+    text-shadow: 2px 2px 4px rgba(0,0,0,0.7);
+  }
+  
+  /* Card text overlay */
+  .card-info {
+    position: absolute;
+    inset: 0;
+    z-index: 10;
+    pointer-events: none;
+    padding: 20px;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+  }
+  
+  .card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+  
+  .card-hp {
+    background: rgba(0,0,0,0.4);
+    padding: 4px 10px;
+    border-radius: 12px;
+    font-weight: bold;
+    color: #ffd700;
+    text-shadow: 0 0 4px #000;
+    font-size: 14px;
+  }
+  
+  .card-attacks {
+    background: rgba(0,0,0,0.5);
+    padding: 12px;
+    border-radius: 8px;
+    font-size: 12px;
+    backdrop-filter: blur(2px);
+  }
+  
+  .attack-name {
+    color: #ffd700;
+    font-weight: bold;
+    margin-bottom: 4px;
+  }
+  
+  /* Layer 2: Holographic rainbow sweep */
+  .layer-holo {
+    mix-blend-mode: color-dodge;
+    background: linear-gradient(
+      105deg,
+      transparent 20%,
+      rgba(255, 0, 128, 0.4) 30%,
+      rgba(255, 215, 0, 0.4) 40%,
+      rgba(0, 255, 200, 0.4) 50%,
+      rgba(100, 100, 255, 0.4) 60%,
+      rgba(255, 0, 200, 0.4) 70%,
+      transparent 80%
+    );
+    background-size: 200% 200%;
+    background-position: var(--holo-x, 50%) var(--holo-y, 50%);
+    opacity: var(--holo-opacity, 0.85);
+    transition: opacity 0.3s;
+  }
+  
+  /* Layer 3: Sparkle/glitter dots */
+  .layer-sparkle {
+    mix-blend-mode: screen;
+    opacity: var(--sparkle-opacity, 0.9);
+    background-image: 
+      radial-gradient(circle at 20% 30%, white 0.5px, transparent 1.5px),
+      radial-gradient(circle at 70% 20%, white 0.8px, transparent 2px),
+      radial-gradient(circle at 40% 60%, white 0.6px, transparent 1.5px),
+      radial-gradient(circle at 85% 75%, white 0.5px, transparent 1.5px),
+      radial-gradient(circle at 15% 85%, white 0.7px, transparent 2px),
+      radial-gradient(circle at 55% 35%, white 0.5px, transparent 1.5px),
+      radial-gradient(circle at 90% 45%, white 0.6px, transparent 1.5px),
+      radial-gradient(circle at 30% 70%, white 0.8px, transparent 2px),
+      radial-gradient(circle at 65% 90%, white 0.5px, transparent 1.5px),
+      radial-gradient(circle at 5% 50%, white 0.6px, transparent 1.5px),
+      radial-gradient(circle at 50% 10%, white 0.7px, transparent 2px),
+      radial-gradient(circle at 75% 55%, white 0.5px, transparent 1.5px);
+    background-size: 100% 100%;
+    background-position: var(--sparkle-shift-x, 0%) var(--sparkle-shift-y, 0%);
+    filter: brightness(calc(0.5 + var(--sparkle-bright, 1)));
+  }
+  
+  /* Layer 4: Border holographic pattern */
+  .layer-border {
+    border: 8px solid transparent;
+    background: linear-gradient(
+      var(--border-angle, 45deg),
+      #ff0080, #ff8c00, #ffd700, #00ff80, #00d4ff, #8000ff, #ff0080
+    ) border-box;
+    -webkit-mask: 
+      linear-gradient(#000 0 0) padding-box,
+      linear-gradient(#000 0 0);
+    -webkit-mask-composite: xor;
+    mask-composite: exclude;
+    opacity: var(--border-opacity, 1);
+  }
+  
+  /* Layer 5: Specular highlight (follows mouse) */
+  .layer-specular {
+    mix-blend-mode: overlay;
+    background: radial-gradient(
+      circle at var(--mouse-x, 50%) var(--mouse-y, 50%),
+      rgba(255, 255, 255, 0.8) 0%,
+      rgba(255, 255, 255, 0.3) 15%,
+      transparent 40%
+    );
+    opacity: var(--specular-opacity, 0.7);
+  }
+  
+  /* Controls Panel */
+  .controls {
+    background: rgba(20, 20, 40, 0.7);
+    border: 1px solid rgba(255,255,255,0.1);
+    border-radius: 12px;
+    padding: 20px;
+    backdrop-filter: blur(10px);
+  }
+  
+  .controls h2 {
+    font-size: 16px;
+    margin-bottom: 16px;
+    color: #ffd700;
+  }
+  
+  .control-section {
+    margin-bottom: 20px;
+    padding-bottom: 16px;
+    border-bottom: 1px solid rgba(255,255,255,0.05);
+  }
+  
+  .control-section:last-child { border-bottom: none; }
+  
+  .control-section h3 {
+    font-size: 13px;
+    margin-bottom: 10px;
+    color: #aaa;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+  }
+  
+  .layer-toggle {
+    display: flex;
+    align-items: center;
+    margin-bottom: 8px;
+    cursor: pointer;
+    font-size: 13px;
+    padding: 6px 8px;
+    border-radius: 6px;
+    transition: background 0.2s;
+  }
+  
+  .layer-toggle:hover { background: rgba(255,255,255,0.05); }
+  
+  .layer-toggle input { margin-right: 10px; cursor: pointer; }
+  
+  .layer-toggle .layer-num {
+    background: #ffd700;
+    color: #000;
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 11px;
+    font-weight: bold;
+    margin-right: 8px;
+  }
+  
+  .slider-control {
+    margin-bottom: 12px;
+  }
+  
+  .slider-control label {
+    display: flex;
+    justify-content: space-between;
+    font-size: 12px;
+    margin-bottom: 4px;
+    color: #ccc;
+  }
+  
+  .slider-control input[type="range"] {
+    width: 100%;
+    accent-color: #ffd700;
+  }
+  
+  .info-panel {
+    background: rgba(255, 215, 0, 0.05);
+    border: 1px solid rgba(255, 215, 0, 0.2);
+    border-radius: 8px;
+    padding: 12px;
+    font-size: 12px;
+    line-height: 1.6;
+    color: #ddd;
+    margin-top: 16px;
+  }
+  
+  .info-panel strong { color: #ffd700; }
+  
+  .layer-disabled { opacity: 0 !important; }
+  
+  .footer-note {
+    grid-column: 1 / -1;
+    margin-top: 20px;
+    padding: 16px;
+    background: rgba(0,0,0,0.3);
+    border-radius: 8px;
+    font-size: 12px;
+    color: #999;
+    text-align: center;
+  }
+  
+  .footer-note code {
+    background: rgba(255,215,0,0.15);
+    padding: 2px 6px;
+    border-radius: 4px;
+    color: #ffd700;
+    font-family: 'Monaco', 'Menlo', monospace;
+  }
+</style>
+</head>
+<body>
+  <div class="container">
+    <h1>xflip Holographic Effect — Interactive Demo</h1>
+    <p class="subtitle">Move your mouse over the card to tilt it. Toggle layers to see each contribution.</p>
+    
+    <div class="stage" id="stage">
+      <div class="card" id="card">
+        <div class="layer layer-base" id="layer-base"></div>
+        <div class="layer layer-holo" id="layer-holo"></div>
+        <div class="layer layer-sparkle" id="layer-sparkle"></div>
+        <div class="layer layer-specular" id="layer-specular"></div>
+        <div class="layer layer-border" id="layer-border"></div>
+        
+        <div class="card-info">
+          <div class="card-header">
+            <div></div>
+            <div class="card-hp">HP 130 ⚡</div>
+          </div>
+          <div class="card-attacks">
+            <div class="attack-name">⚡ Peck — 20</div>
+            <div class="attack-name" style="margin-top:8px">⚡⚡⚡ Thundering Hurricane — 50×</div>
+            <div style="color:#bbb; font-size:11px; margin-top:4px">Flip 4 coins. 50 damage per heads.</div>
+          </div>
+        </div>
+      </div>
+    </div>
+    
+    <div class="controls">
+      <h2>🎨 Layer Composition</h2>
+      
+      <div class="control-section">
+        <h3>Layers (toggle on/off)</h3>
+        <label class="layer-toggle">
+          <input type="checkbox" data-layer="layer-base" checked>
+          <span class="layer-num">1</span> Base Artwork
+        </label>
+        <label class="layer-toggle">
+          <input type="checkbox" data-layer="layer-holo" checked>
+          <span class="layer-num">2</span> Holographic Sweep
+        </label>
+        <label class="layer-toggle">
+          <input type="checkbox" data-layer="layer-sparkle" checked>
+          <span class="layer-num">3</span> Sparkles
+        </label>
+        <label class="layer-toggle">
+          <input type="checkbox" data-layer="layer-specular" checked>
+          <span class="layer-num">4</span> Specular Highlight
+        </label>
+        <label class="layer-toggle">
+          <input type="checkbox" data-layer="layer-border" checked>
+          <span class="layer-num">5</span> Holo Border
+        </label>
+      </div>
+      
+      <div class="control-section">
+        <h3>Effect Parameters</h3>
+        <div class="slider-control">
+          <label>Holo intensity <span id="val-holo">85%</span></label>
+          <input type="range" id="slider-holo" min="0" max="100" value="85">
+        </div>
+        <div class="slider-control">
+          <label>Sparkle brightness <span id="val-sparkle">90%</span></label>
+          <input type="range" id="slider-sparkle" min="0" max="100" value="90">
+        </div>
+        <div class="slider-control">
+          <label>Specular strength <span id="val-specular">70%</span></label>
+          <input type="range" id="slider-specular" min="0" max="100" value="70">
+        </div>
+        <div class="slider-control">
+          <label>Tilt sensitivity <span id="val-tilt">100%</span></label>
+          <input type="range" id="slider-tilt" min="0" max="200" value="100">
+        </div>
+      </div>
+      
+      <div class="info-panel">
+        <strong>💡 How it works:</strong><br>
+        Each layer is a separate image/effect that responds to mouse position.
+        In xflip format, these would be stored as separate chunks
+        (<code>fLyr</code>), with metadata defining blend mode &amp;
+        response curve.
+      </div>
+    </div>
+    
+    <div class="footer-note">
+      This is a CSS+JS approximation. Real implementation would use WebGL shaders for production-quality effects, but the 
+      <strong>data structure</strong> (multiple layers with metadata) stays the same. The xflip format defines 
+      <em>how to store</em> these layers — the rendering engine decides <em>how to display</em> them.
+    </div>
+  </div>
+  
+  <script>
+    const stage = document.getElementById('stage');
+    const card = document.getElementById('card');
+    
+    let tiltSensitivity = 1;
+    let isMouseInside = false;
+    
+    // Animate holographic sweep continuously (subtle base motion)
+    let holoTime = 0;
+    function animateHolo() {
+      holoTime += 0.5;
+      if (!isMouseInside) {
+        const x = 50 + Math.sin(holoTime * 0.02) * 30;
+        const y = 50 + Math.cos(holoTime * 0.015) * 30;
+        card.style.setProperty('--holo-x', `${x}%`);
+        card.style.setProperty('--holo-y', `${y}%`);
+        card.style.setProperty('--border-angle', `${holoTime}deg`);
+      }
+      requestAnimationFrame(animateHolo);
+    }
+    animateHolo();
+    
+    // Mouse tilt + layer response
+    stage.addEventListener('mousemove', (e) => {
+      isMouseInside = true;
+      const rect = stage.getBoundingClientRect();
+      const x = (e.clientX - rect.left) / rect.width;
+      const y = (e.clientY - rect.top) / rect.height;
+      
+      // Card tilt (3D)
+      const rotX = (0.5 - y) * 25 * tiltSensitivity;
+      const rotY = (x - 0.5) * 25 * tiltSensitivity;
+      card.style.transform = `rotateX(${rotX}deg) rotateY(${rotY}deg)`;
+      
+      // Holographic sweep follows mouse direction
+      card.style.setProperty('--holo-x', `${x * 100}%`);
+      card.style.setProperty('--holo-y', `${y * 100}%`);
+      
+      // Specular highlight follows mouse exactly
+      const cardRect = card.getBoundingClientRect();
+      const cx = ((e.clientX - cardRect.left) / cardRect.width) * 100;
+      const cy = ((e.clientY - cardRect.top) / cardRect.height) * 100;
+      card.style.setProperty('--mouse-x', `${cx}%`);
+      card.style.setProperty('--mouse-y', `${cy}%`);
+      
+      // Sparkles shift with mouse (parallax)
+      card.style.setProperty('--sparkle-shift-x', `${(x - 0.5) * 20}%`);
+      card.style.setProperty('--sparkle-shift-y', `${(y - 0.5) * 20}%`);
+      card.style.setProperty('--sparkle-bright', 1 + Math.abs(x - 0.5) + Math.abs(y - 0.5));
+      
+      // Border angle rotates with mouse
+      const angle = Math.atan2(y - 0.5, x - 0.5) * 180 / Math.PI;
+      card.style.setProperty('--border-angle', `${angle + 90}deg`);
+    });
+    
+    stage.addEventListener('mouseleave', () => {
+      isMouseInside = false;
+      card.style.transform = 'rotateX(0deg) rotateY(0deg)';
+      card.style.setProperty('--mouse-x', '50%');
+      card.style.setProperty('--mouse-y', '50%');
+    });
+    
+    // Layer toggles
+    document.querySelectorAll('.layer-toggle input').forEach(input => {
+      input.addEventListener('change', (e) => {
+        const layerId = e.target.dataset.layer;
+        const layer = document.getElementById(layerId);
+        if (e.target.checked) {
+          layer.classList.remove('layer-disabled');
+        } else {
+          layer.classList.add('layer-disabled');
+        }
+      });
+    });
+    
+    // Sliders
+    function bindSlider(sliderId, valueId, cssVar, suffix='', divisor=100) {
+      const slider = document.getElementById(sliderId);
+      const valueDisplay = document.getElementById(valueId);
+      slider.addEventListener('input', (e) => {
+        const val = e.target.value;
+        valueDisplay.textContent = val + '%';
+        if (cssVar) {
+          card.style.setProperty(cssVar, val / divisor);
+        }
+      });
+    }
+    
+    bindSlider('slider-holo', 'val-holo', '--holo-opacity');
+    bindSlider('slider-sparkle', 'val-sparkle', '--sparkle-opacity');
+    bindSlider('slider-specular', 'val-specular', '--specular-opacity');
+    
+    document.getElementById('slider-tilt').addEventListener('input', (e) => {
+      tiltSensitivity = e.target.value / 100;
+      document.getElementById('val-tilt').textContent = e.target.value + '%';
+    });
+  </script>
+</body>
+</html>
