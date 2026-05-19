@@ -1,3 +1,5 @@
+const hex8 = (n: number): string => `0x${n.toString(16).padStart(8, '0')}`;
+
 /**
  * Base class for all xflip-core errors. Catch this to handle anything xflip
  * throws.
@@ -36,9 +38,7 @@ export class XflipCrcError extends XflipParseError {
     readonly actual: number,
   ) {
     super(
-      `CRC32 mismatch on chunk "${chunkType}": expected 0x${expected
-        .toString(16)
-        .padStart(8, '0')}, got 0x${actual.toString(16).padStart(8, '0')}`,
+      `CRC32 mismatch on chunk "${chunkType}": expected ${hex8(expected)}, got ${hex8(actual)}`,
       offset,
     );
     this.name = 'XflipCrcError';

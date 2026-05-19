@@ -23,6 +23,18 @@ const TABLE: Uint32Array = (() => {
   return table;
 })();
 
+const crc32Spans = (parts: readonly Uint8Array[]): number => {
+  let c = 0xffffffff;
+  for (const part of parts) {
+    for (let i = 0; i < part.length; i++) {
+      const byte = part[i] as number;
+      const idx = (c ^ byte) & 0xff;
+      c = ((TABLE[idx] as number) ^ (c >>> 8)) >>> 0;
+    }
+  }
+  return (c ^ 0xffffffff) >>> 0;
+};
+
 /**
  * Compute the CRC-32 of a byte sequence, PNG polynomial.
  *
@@ -35,15 +47,7 @@ const TABLE: Uint32Array = (() => {
  * crc32(new TextEncoder().encode('123456789')); // 0xcbf43926
  * ```
  */
-export function crc32(bytes: Uint8Array): number {
-  let c = 0xffffffff;
-  for (let i = 0; i < bytes.length; i++) {
-    const byte = bytes[i] as number;
-    const idx = (c ^ byte) & 0xff;
-    c = ((TABLE[idx] as number) ^ (c >>> 8)) >>> 0;
-  }
-  return (c ^ 0xffffffff) >>> 0;
-}
+export const crc32 = (bytes: Uint8Array): number => crc32Spans([bytes]);
 
 /**
  * Compute the CRC-32 of the concatenation of multiple byte spans without
@@ -53,14 +57,4 @@ export function crc32(bytes: Uint8Array): number {
  * @param parts - Byte spans, processed in order.
  * @returns 32-bit unsigned checksum.
  */
-export function crc32Concat(...parts: readonly Uint8Array[]): number {
-  let c = 0xffffffff;
-  for (const part of parts) {
-    for (let i = 0; i < part.length; i++) {
-      const byte = part[i] as number;
-      const idx = (c ^ byte) & 0xff;
-      c = ((TABLE[idx] as number) ^ (c >>> 8)) >>> 0;
-    }
-  }
-  return (c ^ 0xffffffff) >>> 0;
-}
+export const crc32Concat = (...parts: readonly Uint8Array[]): number => crc32Spans(parts);
