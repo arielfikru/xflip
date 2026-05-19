@@ -1,0 +1,35 @@
+pre-commit:
+  parallel: true
+  commands:
+    biome-check:
+      glob: "*.{ts,tsx,js,jsx,json}"
+      run: pnpm exec biome check --write {staged_files}
+      stage_fixed: true
+
+    typecheck:
+      glob: "*.{ts,tsx}"
+      run: pnpm typecheck
+
+pre-push:
+  parallel: false
+  commands:
+    test:
+      run: pnpm test
+    lint:
+      run: pnpm lint
+    typecheck:
+      run: pnpm typecheck
+
+commit-msg:
+  commands:
+    conventional-format:
+      run: |
+        # Conventional Commits header check
+        # type(scope): subject  OR  type: subject
+        head=$(head -n1 "{1}")
+        if ! printf '%s' "$head" | grep -Eq '^(feat|fix|chore|docs|test|refactor|perf|build|ci|revert|style)(\([a-z0-9-]+\))?!?: .+'; then
+          echo "Commit subject must match Conventional Commits:"
+          echo "  type(scope): subject"
+          echo "Got: $head"
+          exit 1
+        fi

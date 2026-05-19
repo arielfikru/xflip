@@ -30,14 +30,16 @@
     "format": "biome format --write .",
     "fuzz": "pnpm -r --filter=\"./packages/*\" run --if-present fuzz",
     "size": "size-limit",
-    "clean": "pnpm -r exec rm -rf dist .turbo coverage && rm -rf node_modules/.cache"
+    "clean": "pnpm -r exec rm -rf dist .turbo coverage && rm -rf node_modules/.cache",
+    "prepare": "lefthook install"
   },
   "devDependencies": {
     "@biomejs/biome": "^2.0.0",
+    "@size-limit/preset-small-lib": "^11.1.0",
     "@types/node": "^20.14.0",
     "@vitest/coverage-v8": "^2.1.0",
+    "lefthook": "^1.7.0",
     "size-limit": "^11.1.0",
-    "@size-limit/preset-small-lib": "^11.1.0",
     "tsup": "^8.3.0",
     "typescript": "^5.6.0",
     "vitest": "^2.1.0"
