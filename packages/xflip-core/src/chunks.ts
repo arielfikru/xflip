@@ -10,9 +10,9 @@
  * where the parse failed.
  */
 
-import { BytesReader } from './bytes.js';
+import { BytesReader, type BytesWriter } from './bytes.js';
 import { crc32Concat } from './crc32.js';
-import { XflipCrcError, XflipParseError } from './errors.js';
+import { XflipCrcError, XflipEncodeError, XflipParseError } from './errors.js';
 
 const SIGNATURE_LENGTH = 6;
 const SUPPORTED_MAJOR_VERSION = 1;
@@ -206,6 +206,74 @@ const validateCrc = (
     // Ancillary + non-strict: silently skip. Note: the caller still sees
     // the chunk in the returned list. Callers that care about CRC of
     // ancillary chunks should pass strictAncillaryCrc: true.
+  }
+};
+
+const isAsciiLetter = (charCode: number): boolean => isUppercase(charCode) || isLowercase(charCode);
+
+const typeBytesOf = (type: string): Uint8Array =>
+  new Uint8Array([type.charCodeAt(0), type.charCodeAt(1), type.charCodeAt(2), type.charCodeAt(3)]);
+
+/**
+ * Serialize a single chunk (TYPE + LENGTH + PAYLOAD + CRC) onto a writer.
+ *
+ * Validates the type tag is exactly 4 ASCII letters and the payload fits in
+ * a uint32 within the spec maximum (2^31-1 bytes, §3.2). Computes CRC32 over
+ * `TYPE + PAYLOAD` per spec §3.4.
+ *
+ * @param writer - Destination buffer.
+ * @param type - Four-character ASCII chunk type (e.g., "HEAD", "fLyr").
+ * @param payload - Chunk payload bytes; may be empty.
+ *
+ * @throws XflipEncodeError - Type tag malformed or payload too large.
+ */
+export function writeChunk(writer: BytesWriter, type: string, payload: Uint8Array): void {
+  validateChunkType(type);
+  if (payload.length > MAX_CHUNK_PAYLOAD) {
+    throw new XflipEncodeError(
+      `chunk "${type}" payload length ${payload.length} exceeds the spec maximum of 0x7fffffff`,
+    );
+  }
+  const typeBytes = typeBytesOf(type);
+  writer.bytes(typeBytes);
+  writer.u32BE(payload.length);
+  writer.bytes(payload);
+  writer.u32BE(crc32Concat(typeBytes, payload));
+}
+
+/**
+ * Write the 6-byte XFLP signature: `"XFLP"` + uint8 major + uint8 minor.
+ *
+ * @throws XflipEncodeError - Version bytes out of uint8 range.
+ */
+export function writeSignature(
+  writer: BytesWriter,
+  versionMajor: number,
+  versionMinor: number,
+): void {
+  if (!isUint8(versionMajor) || !isUint8(versionMinor)) {
+    throw new XflipEncodeError(
+      `version bytes must be uint8, got major=${versionMajor} minor=${versionMinor}`,
+    );
+  }
+  writer.ascii('XFLP');
+  writer.u8(versionMajor);
+  writer.u8(versionMinor);
+}
+
+const isUint8 = (n: number): boolean => Number.isInteger(n) && n >= 0 && n <= 0xff;
+
+const validateChunkType = (type: string): void => {
+  if (type.length !== 4) {
+    throw new XflipEncodeError(`chunk type must be 4 characters, got "${type}" (${type.length})`);
+  }
+  for (let i = 0; i < 4; i++) {
+    const code = type.charCodeAt(i);
+    if (!isAsciiLetter(code)) {
+      throw new XflipEncodeError(
+        `chunk type "${type}" contains non-letter byte 0x${code.toString(16)} at index ${i}`,
+      );
+    }
   }
 };
 
