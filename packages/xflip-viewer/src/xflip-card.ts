@@ -82,7 +82,17 @@ const TEMPLATE_HTML = `
     width: 100%;
     height: 100%;
     position: relative;
+    transform-style: preserve-3d;
   }
+  .tilt {
+    position: absolute;
+    inset: 0;
+    transform-style: preserve-3d;
+    transform: rotateX(var(--xflip-tilt-x, 0deg)) rotateY(var(--xflip-tilt-y, 0deg));
+    transition: transform var(--xflip-tilt-release, 400ms) ease-out;
+    will-change: transform;
+  }
+  :host([data-tilting]) .tilt { transition: none; }
   .flipper {
     position: absolute;
     inset: 0;
@@ -115,13 +125,15 @@ const TEMPLATE_HTML = `
   }
   .status[hidden] { display: none; }
   @media (prefers-reduced-motion: reduce) {
-    .flipper { transition: none; }
+    .flipper, .tilt { transition: none; }
   }
 </style>
 <div class="stage" part="stage">
-  <div class="flipper" part="flipper" data-face="front">
-    <img class="face front" part="face face-front" alt="" hidden />
-    <img class="face back" part="face face-back" alt="" hidden />
+  <div class="tilt" part="tilt">
+    <div class="flipper" part="flipper" data-face="front">
+      <img class="face front" part="face face-front" alt="" hidden />
+      <img class="face back" part="face face-back" alt="" hidden />
+    </div>
   </div>
 </div>
 <div class="status" part="status" aria-live="polite"></div>
@@ -169,6 +181,12 @@ export class XflipCardElement extends HTMLElement {
 
   static #registeredTag: string | null = null;
 
+  /**
+   * Maximum tilt magnitude (degrees) applied at the corners of the host on
+   * pointer move. Set to 0 to disable tilt without removing listeners.
+   */
+  tiltMax = 8;
+
   #file: XflipFile | null = null;
   #flipper: HTMLDivElement;
   #frontImg: HTMLImageElement;
@@ -181,8 +199,32 @@ export class XflipCardElement extends HTMLElement {
     front: null,
     back: null,
   };
+  #tiltRaf = 0;
+  #tiltPending: { x: number; y: number } | null = null;
   #onClick = (): void => {
     if (this.#file) this.toggleFace();
+  };
+  #onPointerMove = (ev: PointerEvent): void => {
+    if (this.tiltMax <= 0) return;
+    const rect = this.getBoundingClientRect();
+    if (rect.width === 0 || rect.height === 0) return;
+    const nx = ((ev.clientX - rect.left) / rect.width) * 2 - 1;
+    const ny = ((ev.clientY - rect.top) / rect.height) * 2 - 1;
+    this.#tiltPending = {
+      x: Math.max(-1, Math.min(1, nx)),
+      y: Math.max(-1, Math.min(1, ny)),
+    };
+    this.#scheduleTilt();
+  };
+  #onPointerLeave = (): void => {
+    this.#tiltPending = null;
+    if (this.#tiltRaf) {
+      cancelAnimationFrame(this.#tiltRaf);
+      this.#tiltRaf = 0;
+    }
+    this.removeAttribute('data-tilting');
+    this.style.setProperty('--xflip-tilt-x', '0deg');
+    this.style.setProperty('--xflip-tilt-y', '0deg');
   };
 
   constructor() {
@@ -240,11 +282,21 @@ export class XflipCardElement extends HTMLElement {
 
   connectedCallback(): void {
     this.addEventListener('click', this.#onClick);
+    this.addEventListener('pointermove', this.#onPointerMove);
+    this.addEventListener('pointerleave', this.#onPointerLeave);
+    this.addEventListener('pointercancel', this.#onPointerLeave);
     if (this.src) this.#scheduleLoad(this.src);
   }
 
   disconnectedCallback(): void {
     this.removeEventListener('click', this.#onClick);
+    this.removeEventListener('pointermove', this.#onPointerMove);
+    this.removeEventListener('pointerleave', this.#onPointerLeave);
+    this.removeEventListener('pointercancel', this.#onPointerLeave);
+    if (this.#tiltRaf) {
+      cancelAnimationFrame(this.#tiltRaf);
+      this.#tiltRaf = 0;
+    }
     this.#cancelInFlight();
     // Object URLs are tied to the document; revoke so detached elements
     // don't leak. A subsequent reconnect with the same src will re-fetch.
@@ -335,6 +387,19 @@ export class XflipCardElement extends HTMLElement {
       URL.revokeObjectURL(this.#blobUrls.back);
       this.#blobUrls.back = null;
     }
+  }
+
+  #scheduleTilt(): void {
+    if (this.#tiltRaf) return;
+    this.#tiltRaf = requestAnimationFrame(() => {
+      this.#tiltRaf = 0;
+      if (!this.#tiltPending) return;
+      const { x, y } = this.#tiltPending;
+      this.setAttribute('data-tilting', '');
+      // Pointer y maps to rotateX (top → tilt back); pointer x to rotateY.
+      this.style.setProperty('--xflip-tilt-x', `${(-y * this.tiltMax).toFixed(2)}deg`);
+      this.style.setProperty('--xflip-tilt-y', `${(x * this.tiltMax).toFixed(2)}deg`);
+    });
   }
 
   #cancelInFlight(): void {

@@ -310,6 +310,64 @@ describe('XflipCardElement fetch + decode lifecycle', () => {
     el.remove();
   });
 
+  it('pointermove tilts the card; pointerleave releases tilt', async () => {
+    mockFetchOk(makeFileBytes());
+    const el = document.createElement(XFLIP_CARD_TAG) as XflipCardElement;
+    const loaded = waitForEvent<CustomEvent<XflipLoadEventDetail>>(el, 'xflip-load');
+    document.body.append(el);
+    el.setAttribute('src', './card.xflip');
+    await loaded;
+
+    // happy-dom doesn't lay out, so stub the host rect.
+    el.getBoundingClientRect = () =>
+      ({
+        left: 0,
+        top: 0,
+        right: 200,
+        bottom: 280,
+        width: 200,
+        height: 280,
+        x: 0,
+        y: 0,
+        toJSON() {
+          return this;
+        },
+      }) as DOMRect;
+
+    el.tiltMax = 10;
+    el.dispatchEvent(
+      new PointerEvent('pointermove', {
+        clientX: 200, // right edge → x = 1 → rotateY = +10
+        clientY: 0, // top edge → y = -1 → rotateX = +10
+        bubbles: true,
+      }),
+    );
+    await new Promise((r) => requestAnimationFrame(() => r(null)));
+    expect(el.getAttribute('data-tilting')).toBe('');
+    expect(el.style.getPropertyValue('--xflip-tilt-x')).toBe('10.00deg');
+    expect(el.style.getPropertyValue('--xflip-tilt-y')).toBe('10.00deg');
+
+    el.dispatchEvent(new PointerEvent('pointerleave', { bubbles: true }));
+    expect(el.hasAttribute('data-tilting')).toBe(false);
+    expect(el.style.getPropertyValue('--xflip-tilt-x')).toBe('0deg');
+    expect(el.style.getPropertyValue('--xflip-tilt-y')).toBe('0deg');
+    el.remove();
+  });
+
+  it('tiltMax = 0 disables tilt updates', async () => {
+    mockFetchOk(makeFileBytes());
+    const el = document.createElement(XFLIP_CARD_TAG) as XflipCardElement;
+    const loaded = waitForEvent<CustomEvent<XflipLoadEventDetail>>(el, 'xflip-load');
+    document.body.append(el);
+    el.setAttribute('src', './card.xflip');
+    await loaded;
+    el.tiltMax = 0;
+    el.dispatchEvent(new PointerEvent('pointermove', { clientX: 50, clientY: 50, bubbles: true }));
+    await new Promise((r) => requestAnimationFrame(() => r(null)));
+    expect(el.hasAttribute('data-tilting')).toBe(false);
+    el.remove();
+  });
+
   it('cancels in-flight fetch on disconnect', async () => {
     let captured: AbortSignal | null = null;
     vi.stubGlobal(
