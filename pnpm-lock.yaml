@@ -36,6 +36,12 @@ importers:
         specifier: ^2.1.0
         version: 2.1.9(@types/node@20.19.41)(happy-dom@15.11.7)
 
+  packages/xflip-cli:
+    dependencies:
+      '@xflip/core':
+        specifier: workspace:*
+        version: link:../xflip-core
+
   packages/xflip-core:
     devDependencies:
       '@fast-check/vitest':
