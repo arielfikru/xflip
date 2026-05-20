@@ -196,16 +196,21 @@ describe('XflipCardElement fetch + decode lifecycle', () => {
     el.remove();
   });
 
-  it('paints the front face by default after load', async () => {
+  it('paints both faces and starts on front by default', async () => {
     mockFetchOk(makeFileBytes());
     const el = document.createElement(XFLIP_CARD_TAG) as XflipCardElement;
     const loaded = waitForEvent<CustomEvent<XflipLoadEventDetail>>(el, 'xflip-load');
     document.body.append(el);
     el.setAttribute('src', './card.xflip');
     await loaded;
-    const img = el.shadowRoot?.querySelector('img.face') as HTMLImageElement;
-    expect(img.hidden).toBe(false);
-    expect(img.src).toMatch(/^blob:/);
+    const front = el.shadowRoot?.querySelector('img.face.front') as HTMLImageElement;
+    const back = el.shadowRoot?.querySelector('img.face.back') as HTMLImageElement;
+    const flipper = el.shadowRoot?.querySelector('.flipper') as HTMLElement;
+    expect(front.hidden).toBe(false);
+    expect(back.hidden).toBe(false);
+    expect(front.src).toMatch(/^blob:/);
+    expect(back.src).toMatch(/^blob:/);
+    expect(flipper.dataset.face).toBe('front');
     expect(el.face).toBe('front');
     el.remove();
   });
@@ -217,27 +222,79 @@ describe('XflipCardElement fetch + decode lifecycle', () => {
     document.body.append(el);
     el.setAttribute('src', './card.xflip');
     await loaded;
+    const flipper = el.shadowRoot?.querySelector('.flipper') as HTMLElement;
     expect(el.face).toBe('back');
+    expect(flipper.dataset.face).toBe('back');
     el.remove();
   });
 
-  it('showFace() swaps the visible face URL', async () => {
+  it('applies data-no-anim when NO_FLIP_ANIM flag is set', async () => {
+    mockFetchOk(makeFileBytes({ flags: 0x02 }));
+    const el = document.createElement(XFLIP_CARD_TAG) as XflipCardElement;
+    const loaded = waitForEvent<CustomEvent<XflipLoadEventDetail>>(el, 'xflip-load');
+    document.body.append(el);
+    el.setAttribute('src', './card.xflip');
+    await loaded;
+    expect(el.hasAttribute('data-no-anim')).toBe(true);
+    el.remove();
+  });
+
+  it('showFace() updates the flipper face dataset', async () => {
     mockFetchOk(makeFileBytes());
     const el = document.createElement(XFLIP_CARD_TAG) as XflipCardElement;
     const loaded = waitForEvent<CustomEvent<XflipLoadEventDetail>>(el, 'xflip-load');
     document.body.append(el);
     el.setAttribute('src', './card.xflip');
     await loaded;
-    const img = el.shadowRoot?.querySelector('img.face') as HTMLImageElement;
-    const frontUrl = img.src;
+    const flipper = el.shadowRoot?.querySelector('.flipper') as HTMLElement;
     el.showFace('back');
+    expect(flipper.dataset.face).toBe('back');
     expect(el.face).toBe('back');
-    expect(img.src).not.toBe(frontUrl);
-    expect(img.src).toMatch(/^blob:/);
+    el.showFace('front');
+    expect(flipper.dataset.face).toBe('front');
     el.remove();
   });
 
-  it('hides face image and clears state when src is removed', async () => {
+  it('toggleFace() flips between front and back', async () => {
+    mockFetchOk(makeFileBytes());
+    const el = document.createElement(XFLIP_CARD_TAG) as XflipCardElement;
+    const loaded = waitForEvent<CustomEvent<XflipLoadEventDetail>>(el, 'xflip-load');
+    document.body.append(el);
+    el.setAttribute('src', './card.xflip');
+    await loaded;
+    expect(el.face).toBe('front');
+    el.toggleFace();
+    expect(el.face).toBe('back');
+    el.toggleFace();
+    expect(el.face).toBe('front');
+    el.remove();
+  });
+
+  it('click toggles the face when a file is loaded', async () => {
+    mockFetchOk(makeFileBytes());
+    const el = document.createElement(XFLIP_CARD_TAG) as XflipCardElement;
+    const loaded = waitForEvent<CustomEvent<XflipLoadEventDetail>>(el, 'xflip-load');
+    document.body.append(el);
+    el.setAttribute('src', './card.xflip');
+    await loaded;
+    expect(el.face).toBe('front');
+    el.click();
+    expect(el.face).toBe('back');
+    el.click();
+    expect(el.face).toBe('front');
+    el.remove();
+  });
+
+  it('click before load is a no-op', () => {
+    const el = document.createElement(XFLIP_CARD_TAG) as XflipCardElement;
+    document.body.append(el);
+    el.click();
+    expect(el.face).toBe('front');
+    expect(el.file).toBeNull();
+    el.remove();
+  });
+
+  it('hides face images and clears state when src is removed', async () => {
     mockFetchOk(makeFileBytes());
     const el = document.createElement(XFLIP_CARD_TAG) as XflipCardElement;
     const loaded = waitForEvent<CustomEvent<XflipLoadEventDetail>>(el, 'xflip-load');
@@ -245,8 +302,10 @@ describe('XflipCardElement fetch + decode lifecycle', () => {
     el.setAttribute('src', './card.xflip');
     await loaded;
     el.removeAttribute('src');
-    const img = el.shadowRoot?.querySelector('img.face') as HTMLImageElement;
-    expect(img.hidden).toBe(true);
+    const front = el.shadowRoot?.querySelector('img.face.front') as HTMLImageElement;
+    const back = el.shadowRoot?.querySelector('img.face.back') as HTMLImageElement;
+    expect(front.hidden).toBe(true);
+    expect(back.hidden).toBe(true);
     expect(el.file).toBeNull();
     el.remove();
   });

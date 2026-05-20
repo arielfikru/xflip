@@ -23,10 +23,13 @@ export interface XflipErrorEventDetail {
 export type XflipFace = 'front' | 'back';
 
 /**
- * Bit 0 of `XflipHead.flags` (DEFAULT_BACK) — when set, the card opens
- * showing the back face. Spec v0.2 §4.1.
+ * Bits of `XflipHead.flags` per spec v0.2 §4.1.
+ *
+ * - `DEFAULT_BACK` (bit 0): card opens showing the back face.
+ * - `NO_FLIP_ANIM` (bit 1): renderers should skip the flip animation.
  */
 const HEAD_FLAG_DEFAULT_BACK = 0x01;
+const HEAD_FLAG_NO_FLIP_ANIM = 0x02;
 
 /**
  * MIME types for the formats `<img>` can render natively. Unknown or
@@ -68,13 +71,27 @@ const TEMPLATE_HTML = `
     aspect-ratio: var(--xflip-aspect-ratio, 5 / 7);
     width: var(--xflip-width, 240px);
     contain: layout paint;
+    perspective: var(--xflip-perspective, 1200px);
+    cursor: pointer;
+    user-select: none;
+    -webkit-tap-highlight-color: transparent;
   }
   :host([hidden]) { display: none; }
+  :host([data-no-anim]) .flipper { transition: none; }
   .stage {
     width: 100%;
     height: 100%;
     position: relative;
   }
+  .flipper {
+    position: absolute;
+    inset: 0;
+    transform-style: preserve-3d;
+    transition: transform var(--xflip-flip-duration, 600ms)
+      var(--xflip-flip-easing, cubic-bezier(0.2, 0.8, 0.2, 1));
+    transform: rotateY(0deg);
+  }
+  .flipper[data-face='back'] { transform: rotateY(180deg); }
   .face {
     position: absolute;
     inset: 0;
@@ -82,7 +99,10 @@ const TEMPLATE_HTML = `
     height: 100%;
     object-fit: contain;
     display: block;
+    backface-visibility: hidden;
+    -webkit-backface-visibility: hidden;
   }
+  .face.back { transform: rotateY(180deg); }
   .face[hidden] { display: none; }
   .status {
     position: absolute;
@@ -94,9 +114,15 @@ const TEMPLATE_HTML = `
     pointer-events: none;
   }
   .status[hidden] { display: none; }
+  @media (prefers-reduced-motion: reduce) {
+    .flipper { transition: none; }
+  }
 </style>
 <div class="stage" part="stage">
-  <img class="face" part="face" alt="" hidden />
+  <div class="flipper" part="flipper" data-face="front">
+    <img class="face front" part="face face-front" alt="" hidden />
+    <img class="face back" part="face face-back" alt="" hidden />
+  </div>
 </div>
 <div class="status" part="status" aria-live="polite"></div>
 `;
@@ -144,7 +170,9 @@ export class XflipCardElement extends HTMLElement {
   static #registeredTag: string | null = null;
 
   #file: XflipFile | null = null;
-  #face: HTMLImageElement;
+  #flipper: HTMLDivElement;
+  #frontImg: HTMLImageElement;
+  #backImg: HTMLImageElement;
   #status: HTMLDivElement;
   #abort: AbortController | null = null;
   #loadToken = 0;
@@ -153,12 +181,17 @@ export class XflipCardElement extends HTMLElement {
     front: null,
     back: null,
   };
+  #onClick = (): void => {
+    if (this.#file) this.toggleFace();
+  };
 
   constructor() {
     super();
     const root = this.attachShadow({ mode: 'open' });
     root.innerHTML = TEMPLATE_HTML;
-    this.#face = root.querySelector('.face') as HTMLImageElement;
+    this.#flipper = root.querySelector('.flipper') as HTMLDivElement;
+    this.#frontImg = root.querySelector('.face.front') as HTMLImageElement;
+    this.#backImg = root.querySelector('.face.back') as HTMLImageElement;
     this.#status = root.querySelector('.status') as HTMLDivElement;
     this.#setStatus(null);
   }
@@ -179,13 +212,21 @@ export class XflipCardElement extends HTMLElement {
   }
 
   /**
-   * Swap the visible face. No-op if no file is loaded yet. Flip animation
-   * lands in P3.4; for now this performs an instant swap.
+   * Swap the visible face. No-op if no file is loaded yet.
+   *
+   * Triggers the CSS 3D flip transition unless `NO_FLIP_ANIM` (head flag
+   * bit 1) is set on the loaded file or the user has
+   * `prefers-reduced-motion: reduce`.
    */
   showFace(face: XflipFace): void {
     if (this.#currentFace === face) return;
     this.#currentFace = face;
-    if (this.#file) this.#paintFace();
+    this.#flipper.dataset.face = face;
+  }
+
+  /** Toggle between front and back. */
+  toggleFace(): void {
+    this.showFace(this.#currentFace === 'front' ? 'back' : 'front');
   }
 
   /** Source URL. Mirrors the `src` attribute. */
@@ -198,10 +239,12 @@ export class XflipCardElement extends HTMLElement {
   }
 
   connectedCallback(): void {
+    this.addEventListener('click', this.#onClick);
     if (this.src) this.#scheduleLoad(this.src);
   }
 
   disconnectedCallback(): void {
+    this.removeEventListener('click', this.#onClick);
     this.#cancelInFlight();
     // Object URLs are tied to the document; revoke so detached elements
     // don't leak. A subsequent reconnect with the same src will re-fetch.
@@ -257,27 +300,30 @@ export class XflipCardElement extends HTMLElement {
     this.#file = file;
     this.#blobUrls.front = makeBlobUrl(file.front, file.head.frontFormat);
     this.#blobUrls.back = makeBlobUrl(file.back, file.head.backFormat);
+
+    this.#frontImg.src = this.#blobUrls.front;
+    this.#frontImg.hidden = false;
+    this.#backImg.src = this.#blobUrls.back;
+    this.#backImg.hidden = false;
+
+    const noAnim = (file.head.flags & HEAD_FLAG_NO_FLIP_ANIM) !== 0;
+    this.toggleAttribute('data-no-anim', noAnim);
+
     this.#currentFace =
       (file.head.flags & HEAD_FLAG_DEFAULT_BACK) === HEAD_FLAG_DEFAULT_BACK ? 'back' : 'front';
-    this.#paintFace();
-  }
-
-  #paintFace(): void {
-    const url = this.#currentFace === 'back' ? this.#blobUrls.back : this.#blobUrls.front;
-    if (url === null) {
-      this.#face.hidden = true;
-      this.#face.removeAttribute('src');
-      return;
-    }
-    this.#face.src = url;
-    this.#face.hidden = false;
+    this.#flipper.dataset.face = this.#currentFace;
   }
 
   #resetFile(): void {
     this.#revokeBlobs();
     this.#file = null;
-    this.#face.hidden = true;
-    this.#face.removeAttribute('src');
+    this.#frontImg.hidden = true;
+    this.#frontImg.removeAttribute('src');
+    this.#backImg.hidden = true;
+    this.#backImg.removeAttribute('src');
+    this.removeAttribute('data-no-anim');
+    this.#currentFace = 'front';
+    this.#flipper.dataset.face = 'front';
   }
 
   #revokeBlobs(): void {
