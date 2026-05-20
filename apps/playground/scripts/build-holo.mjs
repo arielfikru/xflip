@@ -227,14 +227,14 @@ function rainbowOverlayPng(width, height) {
   const raw = new Uint8Array(stride * height);
   for (let y = 0; y < height; y++) {
     const row = stride * y;
-    raw[row] = 0; // filter: None
+    raw[row] = 0;
+    const vy = vignette(y / height);
     for (let x = 0; x < width; x++) {
-      // Diagonal hue + sinusoidal sparkle band
+      const vx = vignette(x / width);
       const t = ((x + y) / (width + height)) * 2;
       const sparkle = 0.5 + 0.5 * Math.sin(t * Math.PI * 6);
       const [r, g, b] = hsl((t + 0.05 * sparkle) % 1, 0.95, 0.6);
-      // Alpha is higher on the sparkle peaks, lower in troughs.
-      const alpha = Math.round(80 + 130 * sparkle);
+      const alpha = Math.round((80 + 130 * sparkle) * vx * vy);
       const px = row + 1 + x * 4;
       raw[px] = r;
       raw[px + 1] = g;
@@ -245,6 +245,26 @@ function rainbowOverlayPng(width, height) {
   const idat = pngChunk('IDAT', new Uint8Array(deflateSync(raw)));
   const iend = pngChunk('IEND', new Uint8Array());
   return concat([sig, ihdr, idat, iend]);
+}
+
+/**
+ * Smoothstep falloff: 0 at edges (≤ 0.04 / ≥ 0.96), 1 in the central
+ * ~80%. Used to keep holo + sparkle inside the artwork rather than
+ * spilling onto borders or frames within the photo.
+ */
+function vignette(t) {
+  const edge = 0.04;
+  const inner = 0.2;
+  if (t < edge || t > 1 - edge) return 0;
+  if (t < edge + inner) {
+    const u = (t - edge) / inner;
+    return u * u * (3 - 2 * u);
+  }
+  if (t > 1 - edge - inner) {
+    const u = (1 - edge - t) / inner;
+    return u * u * (3 - 2 * u);
+  }
+  return 1;
 }
 
 /**
@@ -265,6 +285,10 @@ function sparklePng(width, height) {
   for (let i = 0; i < count; i++) {
     const cx = Math.floor(rand() * width);
     const cy = Math.floor(rand() * height);
+    // Reject sparkles that land near the edges so they don't appear on
+    // the photo's outer margin.
+    const v = vignette(cx / width) * vignette(cy / height);
+    if (v < 0.4) continue;
     const r = 1.2 + rand() * 3.5;
     const peakAlpha = 200 + Math.floor(rand() * 55);
     const box = Math.ceil(r * 2);

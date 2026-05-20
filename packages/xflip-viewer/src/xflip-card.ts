@@ -157,6 +157,11 @@ const TEMPLATE_HTML = `
     pointer-events: none;
     backface-visibility: hidden;
     -webkit-backface-visibility: hidden;
+    /* Keep parallax-translated layers visually inside the card. Using
+       clip-path instead of overflow:hidden because the parent uses
+       transform-style: preserve-3d, which breaks the latter in some
+       engines. */
+    clip-path: inset(0);
   }
   .layers.back { transform: rotateY(180deg); }
   .layer {
