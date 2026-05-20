@@ -1,6 +1,64 @@
 // @vitest-environment happy-dom
-import { beforeAll, describe, expect, it } from 'vitest';
-import { defineXflipCard, XFLIP_CARD_TAG, XflipCardElement } from './index.js';
+import { encode, type XflipFile } from '@xflip/core';
+import { afterEach, beforeAll, describe, expect, it, vi } from 'vitest';
+import {
+  defineXflipCard,
+  XFLIP_CARD_TAG,
+  XflipCardElement,
+  type XflipErrorEventDetail,
+  type XflipLoadEventDetail,
+} from './index.js';
+
+function makeFileBytes(): Uint8Array {
+  const file: XflipFile = {
+    versionMajor: 1,
+    versionMinor: 0,
+    head: {
+      width: 100,
+      height: 140,
+      frontFormat: 'png',
+      backFormat: 'png',
+      flipAxis: 'horizontal',
+      flags: 0,
+    },
+    front: new Uint8Array([0x89, 0x50, 0x4e, 0x47]),
+    back: new Uint8Array([0x89, 0x50, 0x4e, 0x47]),
+  };
+  return encode(file);
+}
+
+function mockFetchOk(bytes: Uint8Array): void {
+  vi.stubGlobal(
+    'fetch',
+    vi.fn(async () => ({
+      ok: true,
+      status: 200,
+      arrayBuffer: async () =>
+        bytes.buffer.slice(bytes.byteOffset, bytes.byteOffset + bytes.byteLength),
+    })),
+  );
+}
+
+function mockFetchHttpError(status: number): void {
+  vi.stubGlobal(
+    'fetch',
+    vi.fn(async () => ({
+      ok: false,
+      status,
+      arrayBuffer: async () => new ArrayBuffer(0),
+    })),
+  );
+}
+
+function waitForEvent<T extends Event>(el: EventTarget, type: string): Promise<T> {
+  return new Promise((resolve) => {
+    el.addEventListener(type, (e) => resolve(e as T), { once: true });
+  });
+}
+
+afterEach(() => {
+  vi.unstubAllGlobals();
+});
 
 // Custom elements can only be registered once per constructor per document.
 // All tests share a single registration under the canonical tag.
@@ -63,5 +121,96 @@ describe('XflipCardElement', () => {
     el.removeAttribute('src');
     expect(el.file).toBeNull();
     el.remove();
+  });
+});
+
+describe('XflipCardElement fetch + decode lifecycle', () => {
+  it('emits xflip-load with decoded file on success', async () => {
+    mockFetchOk(makeFileBytes());
+    const el = document.createElement(XFLIP_CARD_TAG) as XflipCardElement;
+    const loaded = waitForEvent<CustomEvent<XflipLoadEventDetail>>(el, 'xflip-load');
+    document.body.append(el);
+    el.setAttribute('src', './card.xflip');
+    const ev = await loaded;
+    expect(ev.detail.file.versionMajor).toBe(1);
+    expect(ev.detail.file.versionMinor).toBe(0);
+    expect(el.file).toBe(ev.detail.file);
+    el.remove();
+  });
+
+  it('emits xflip-error on HTTP failure', async () => {
+    mockFetchHttpError(404);
+    const el = document.createElement(XFLIP_CARD_TAG) as XflipCardElement;
+    const failed = waitForEvent<CustomEvent<XflipErrorEventDetail>>(el, 'xflip-error');
+    document.body.append(el);
+    el.setAttribute('src', './missing.xflip');
+    const ev = await failed;
+    expect(ev.detail.error.message).toMatch(/HTTP 404/);
+    expect(el.file).toBeNull();
+    el.remove();
+  });
+
+  it('emits xflip-error on decode failure (invalid bytes)', async () => {
+    mockFetchOk(new Uint8Array([0, 1, 2, 3]));
+    const el = document.createElement(XFLIP_CARD_TAG) as XflipCardElement;
+    const failed = waitForEvent<CustomEvent<XflipErrorEventDetail>>(el, 'xflip-error');
+    document.body.append(el);
+    el.setAttribute('src', './bad.xflip');
+    const ev = await failed;
+    expect(ev.detail.error).toBeInstanceOf(Error);
+    el.remove();
+  });
+
+  it('cancels prior in-flight fetch when src changes', async () => {
+    const bytes = makeFileBytes();
+    const calls: AbortSignal[] = [];
+    vi.stubGlobal(
+      'fetch',
+      vi.fn((_url: string, init?: RequestInit) => {
+        const signal = init?.signal as AbortSignal;
+        calls.push(signal);
+        return new Promise((resolve, reject) => {
+          signal.addEventListener('abort', () => reject(new DOMException('aborted', 'AbortError')));
+          // Resolve only the last call; earlier ones get aborted first.
+          if (calls.length === 2) {
+            resolve({
+              ok: true,
+              status: 200,
+              arrayBuffer: async () =>
+                bytes.buffer.slice(bytes.byteOffset, bytes.byteOffset + bytes.byteLength),
+            } as Response);
+          }
+        });
+      }),
+    );
+
+    const el = document.createElement(XFLIP_CARD_TAG) as XflipCardElement;
+    const loaded = waitForEvent<CustomEvent<XflipLoadEventDetail>>(el, 'xflip-load');
+    document.body.append(el);
+    el.setAttribute('src', './first.xflip');
+    el.setAttribute('src', './second.xflip');
+    await loaded;
+    expect(calls).toHaveLength(2);
+    expect(calls[0].aborted).toBe(true);
+    expect(calls[1].aborted).toBe(false);
+    el.remove();
+  });
+
+  it('cancels in-flight fetch on disconnect', async () => {
+    let captured: AbortSignal | null = null;
+    vi.stubGlobal(
+      'fetch',
+      vi.fn((_url: string, init?: RequestInit) => {
+        captured = init?.signal as AbortSignal;
+        return new Promise(() => {});
+      }),
+    );
+
+    const el = document.createElement(XFLIP_CARD_TAG) as XflipCardElement;
+    document.body.append(el);
+    el.setAttribute('src', './slow.xflip');
+    expect(captured).not.toBeNull();
+    el.remove();
+    expect(captured?.aborted).toBe(true);
   });
 });

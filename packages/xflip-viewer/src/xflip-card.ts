@@ -1,4 +1,4 @@
-import type { XflipFile } from '@xflip/core';
+import { decode, type XflipFile } from '@xflip/core';
 
 /**
  * Tag name registered by {@link defineXflipCard} and {@link XflipCardElement.register}.
@@ -8,6 +8,16 @@ import type { XflipFile } from '@xflip/core';
  * {@link XflipCardElement.register}.
  */
 export const XFLIP_CARD_TAG = 'xflip-card';
+
+/** Detail payload of the `xflip-load` event. */
+export interface XflipLoadEventDetail {
+  file: XflipFile;
+}
+
+/** Detail payload of the `xflip-error` event. */
+export interface XflipErrorEventDetail {
+  error: Error;
+}
 
 /**
  * Observed attributes for `<xflip-card>`.
@@ -93,6 +103,8 @@ export class XflipCardElement extends HTMLElement {
   #file: XflipFile | null = null;
   #stage: HTMLDivElement;
   #status: HTMLDivElement;
+  #abort: AbortController | null = null;
+  #loadToken = 0;
 
   constructor() {
     super();
@@ -123,11 +135,11 @@ export class XflipCardElement extends HTMLElement {
   }
 
   connectedCallback(): void {
-    if (this.src) this.#scheduleLoad();
+    if (this.src) this.#scheduleLoad(this.src);
   }
 
   disconnectedCallback(): void {
-    // P3.3 will cancel in-flight fetches here.
+    this.#cancelInFlight();
   }
 
   attributeChangedCallback(
@@ -137,14 +149,48 @@ export class XflipCardElement extends HTMLElement {
   ): void {
     if (oldValue === newValue) return;
     if (name === 'src') {
+      this.#cancelInFlight();
       if (newValue === null) this.#clear();
-      else if (this.isConnected) this.#scheduleLoad();
+      else if (this.isConnected) this.#scheduleLoad(newValue);
     }
   }
 
-  #scheduleLoad(): void {
-    // Placeholder until P3.3 wires fetch + decode.
+  #scheduleLoad(src: string): void {
+    const controller = new AbortController();
+    this.#abort = controller;
+    const token = ++this.#loadToken;
     this.#setStatus('loading…');
+    void this.#load(src, controller.signal, token);
+  }
+
+  async #load(src: string, signal: AbortSignal, token: number): Promise<void> {
+    try {
+      const res = await fetch(src, { signal });
+      if (signal.aborted || token !== this.#loadToken) return;
+      if (!res.ok) {
+        throw new Error(`fetch failed: HTTP ${res.status}`);
+      }
+      const buf = await res.arrayBuffer();
+      if (signal.aborted || token !== this.#loadToken) return;
+      const file = decode(new Uint8Array(buf));
+      if (signal.aborted || token !== this.#loadToken) return;
+      this.#file = file;
+      this.#setStatus(null);
+      this.dispatchEvent(new CustomEvent('xflip-load', { detail: { file }, bubbles: true }));
+    } catch (err) {
+      if (signal.aborted || token !== this.#loadToken) return;
+      const error = err instanceof Error ? err : new Error(String(err));
+      this.#file = null;
+      this.#setStatus(`error: ${error.message}`);
+      this.dispatchEvent(new CustomEvent('xflip-error', { detail: { error }, bubbles: true }));
+    }
+  }
+
+  #cancelInFlight(): void {
+    if (this.#abort) {
+      this.#abort.abort();
+      this.#abort = null;
+    }
   }
 
   #clear(): void {

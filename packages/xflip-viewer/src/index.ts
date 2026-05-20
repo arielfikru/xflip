@@ -1,6 +1,11 @@
 import { XFLIP_CARD_TAG, XflipCardElement } from './xflip-card.js';
 
-export { XFLIP_CARD_TAG, XflipCardElement } from './xflip-card.js';
+export {
+  XFLIP_CARD_TAG,
+  XflipCardElement,
+  type XflipErrorEventDetail,
+  type XflipLoadEventDetail,
+} from './xflip-card.js';
 
 /**
  * Convenience registration helper.
