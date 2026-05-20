@@ -95,4 +95,45 @@ describe('cli', () => {
     expect(code).toBe(0);
     expect(c.out.join('\n')).toContain('xflip inspect <file>');
   });
+
+  it('validate on valid file exits 0 with OK line on stdout', async () => {
+    const path = join(tmp, 'good.xflip');
+    await writeFile(path, MINIMAL_V1_BYTES);
+    const c = capture();
+    const code = await run(['validate', path], c.io);
+    expect(code).toBe(0);
+    expect(c.out.join('\n')).toMatch(/^OK\s+/);
+    expect(c.err).toEqual([]);
+  });
+
+  it('validate on malformed file exits 1 with FAIL on stderr', async () => {
+    const path = join(tmp, 'bad.xflip');
+    await writeFile(path, new Uint8Array([0, 0, 0, 0, 0, 0, 0, 0]));
+    const c = capture();
+    const code = await run(['validate', path], c.io);
+    expect(code).toBe(1);
+    expect(c.err.join('\n')).toContain('FAIL');
+    expect(c.err.join('\n')).toContain('Xflip');
+  });
+
+  it('validate missing file argument exits 2', async () => {
+    const c = capture();
+    const code = await run(['validate'], c.io);
+    expect(code).toBe(2);
+    expect(c.err.join('\n')).toContain('missing <file>');
+  });
+
+  it('help validate prints validate-specific help', async () => {
+    const c = capture();
+    const code = await run(['help', 'validate'], c.io);
+    expect(code).toBe(0);
+    expect(c.out.join('\n')).toContain('xflip validate <file>');
+  });
+
+  it('root help mentions validate command', async () => {
+    const c = capture();
+    const code = await run([], c.io);
+    expect(code).toBe(0);
+    expect(c.out.join('\n')).toContain('validate <file>');
+  });
 });

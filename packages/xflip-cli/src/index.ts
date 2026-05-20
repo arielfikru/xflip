@@ -10,3 +10,5 @@
 
 export type { ChunkSummary, InspectOptions, InspectResult } from './inspect.js';
 export { inspect } from './inspect.js';
+export type { ValidateOptions, ValidateResult } from './validate.js';
+export { validate } from './validate.js';

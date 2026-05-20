@@ -3,8 +3,8 @@
 Command-line tool for the [xflip](https://github.com/arielfikru/xflip) image
 format. Create, inspect, validate, and extract `.xflip` files from Node.
 
-> Status: **work in progress.** P4.1 ships `inspect` only. `create`,
-> `extract`, `validate`, and `layers` follow in subsequent P4 tasks.
+> Status: **work in progress.** P4.1–P4.2 ship `inspect` and `validate`.
+> `create`, `extract`, and `layers` follow in subsequent P4 tasks.
 
 ## Install
 
@@ -44,6 +44,28 @@ xflip file: card.xflip
   HEAD         6        12  yes
   FRNT        34         5  yes
   BACK        51         5  yes
+```
+
+Options:
+
+- `--strict-ancillary-crc` — treat ancillary CRC mismatches as fatal.
+- `-h`, `--help` — show command help.
+
+### `xflip validate <file>`
+
+Run the full decoder on an `.xflip` file. Checks signature, every CRC,
+chunk order, mandatory chunks, HEAD payload shape, and known ancillary
+parse contracts. Prints a one-line `OK` report on success, or a
+multi-line `FAIL` report (with error class + message) on failure. Exit 0
+valid, 1 invalid.
+
+```sh
+xflip validate card.xflip
+# OK  card.xflip  (xflip 1.0, 78 bytes)
+
+xflip validate broken.xflip
+# FAIL  broken.xflip  (8 bytes)
+#   XflipParseError: invalid magic bytes
 ```
 
 Options:
