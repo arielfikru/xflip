@@ -1,15 +1,10 @@
-import { identityPose } from '@xflip/core';
-import type { PoseKeyframe, StudioAction, StudioLayer, StudioProject } from './types.js';
+import type { StudioAction, StudioLayer, StudioProject } from './types.js';
 
 export const INITIAL_PROJECT: StudioProject = {
   width: 480,
   height: 672,
   layers: [],
   selectedLayerId: null,
-  activePoseCell: 4, // center of 3×3 grid
-  gridSize: 3,
-  previewNx: 0,
-  previewNy: 0,
 };
 
 export function studioReducer(state: StudioProject, action: StudioAction): StudioProject {
@@ -38,18 +33,6 @@ export function studioReducer(state: StudioProject, action: StudioAction): Studi
         ),
       };
 
-    case 'SET_LAYER_POSE_CELL': {
-      return {
-        ...state,
-        layers: state.layers.map((l) => {
-          if (l.id !== action.layerId) return l;
-          const keyframes = [...l.pose.keyframes] as PoseKeyframe[];
-          keyframes[action.cellIndex] = action.keyframe;
-          return { ...l, pose: { ...l.pose, keyframes } };
-        }),
-      };
-    }
-
     case 'SET_LAYER_OPACITY':
       return {
         ...state,
@@ -74,20 +57,6 @@ export function studioReducer(state: StudioProject, action: StudioAction): Studi
         ),
       };
 
-    case 'SET_LAYER_POSE_ENABLED':
-      return {
-        ...state,
-        layers: state.layers.map((l) =>
-          l.id === action.layerId ? { ...l, poseEnabled: action.enabled } : l,
-        ),
-      };
-
-    case 'SET_ACTIVE_POSE_CELL':
-      return { ...state, activePoseCell: action.cellIndex };
-
-    case 'SET_PREVIEW_TILT':
-      return { ...state, previewNx: action.nx, previewNy: action.ny };
-
     case 'SET_DIMENSIONS':
       return { ...state, width: action.width, height: action.height };
 
@@ -101,7 +70,7 @@ export function studioReducer(state: StudioProject, action: StudioAction): Studi
 
 let _nextId = 1;
 
-export function createLayer(blob: Blob, url: string, zOrder: number, gridSize: 3 | 5): StudioLayer {
+export function createLayer(blob: Blob, url: string, zOrder: number): StudioLayer {
   return {
     id: _nextId++,
     name: blob instanceof File ? (blob as File).name.replace(/\.[^.]+$/, '') : `Layer ${zOrder}`,
@@ -111,7 +80,5 @@ export function createLayer(blob: Blob, url: string, zOrder: number, gridSize: 3
     opacity: 255,
     blendMode: 'normal',
     effectType: 'base',
-    poseEnabled: true,
-    pose: identityPose(gridSize),
   };
 }

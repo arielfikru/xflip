@@ -1,36 +1,9 @@
 import type React from 'react';
 import { useStudio } from '../store/context.js';
-import type { PoseKeyframe } from '../store/types.js';
-import { PoseGrid } from './PoseGrid.js';
-
-const RAD_TO_DEG = 180 / Math.PI;
-const DEG_TO_RAD = Math.PI / 180;
 
 export function Inspector() {
   const { project, dispatch } = useStudio();
   const layer = project.layers.find((l) => l.id === project.selectedLayerId);
-
-  const identity: PoseKeyframe = {
-    tx: 0,
-    ty: 0,
-    rotationXRad: 0,
-    rotationYRad: 0,
-    scale: 1,
-    opacity: 1,
-  };
-  const activeKf: PoseKeyframe = layer
-    ? (layer.pose.keyframes[project.activePoseCell] ?? identity)
-    : identity;
-
-  const setKf = (patch: Partial<PoseKeyframe>) => {
-    if (!layer) return;
-    dispatch({
-      type: 'SET_LAYER_POSE_CELL',
-      layerId: layer.id,
-      cellIndex: project.activePoseCell,
-      keyframe: { ...activeKf, ...patch },
-    });
-  };
 
   return (
     <aside style={styles.panel}>
@@ -80,7 +53,7 @@ export function Inspector() {
                 ))}
               </select>
             </Row>
-            <PoseSliderRow
+            <SliderRow
               label="Opacity"
               min={0}
               max={255}
@@ -93,98 +66,13 @@ export function Inspector() {
               }
             />
           </Section>
-
-          <Section label="Pose">
-            <label style={styles.checkRow}>
-              <input
-                type="checkbox"
-                checked={layer.poseEnabled}
-                onChange={(e) =>
-                  dispatch({
-                    type: 'SET_LAYER_POSE_ENABLED',
-                    layerId: layer.id,
-                    enabled: e.target.checked,
-                  })
-                }
-              />
-              Enable pose rig
-            </label>
-            {layer.poseEnabled && (
-              <>
-                <p style={styles.poseLabel}>Active cell (click to switch):</p>
-                <PoseGrid />
-                <div style={styles.kfControls}>
-                  <PoseSliderRow
-                    label="tx"
-                    min={-500}
-                    max={500}
-                    step={1}
-                    value={activeKf.tx}
-                    unit="px"
-                    display={Math.round(activeKf.tx)}
-                    onChange={(v) => setKf({ tx: v })}
-                  />
-                  <PoseSliderRow
-                    label="ty"
-                    min={-500}
-                    max={500}
-                    step={1}
-                    value={activeKf.ty}
-                    unit="px"
-                    display={Math.round(activeKf.ty)}
-                    onChange={(v) => setKf({ ty: v })}
-                  />
-                  <PoseSliderRow
-                    label="rotX"
-                    min={-180}
-                    max={180}
-                    step={1}
-                    value={Math.round(activeKf.rotationXRad * RAD_TO_DEG)}
-                    unit="°"
-                    display={Math.round(activeKf.rotationXRad * RAD_TO_DEG)}
-                    onChange={(v) => setKf({ rotationXRad: v * DEG_TO_RAD })}
-                  />
-                  <PoseSliderRow
-                    label="rotY"
-                    min={-180}
-                    max={180}
-                    step={1}
-                    value={Math.round(activeKf.rotationYRad * RAD_TO_DEG)}
-                    unit="°"
-                    display={Math.round(activeKf.rotationYRad * RAD_TO_DEG)}
-                    onChange={(v) => setKf({ rotationYRad: v * DEG_TO_RAD })}
-                  />
-                  <PoseSliderRow
-                    label="scale"
-                    min={0.01}
-                    max={5}
-                    step={0.01}
-                    value={activeKf.scale}
-                    unit=""
-                    display={Number(activeKf.scale.toFixed(2))}
-                    onChange={(v) => setKf({ scale: v })}
-                  />
-                  <PoseSliderRow
-                    label="opacity"
-                    min={0}
-                    max={100}
-                    step={1}
-                    value={Math.round(activeKf.opacity * 100)}
-                    unit="%"
-                    display={Math.round(activeKf.opacity * 100)}
-                    onChange={(v) => setKf({ opacity: v / 100 })}
-                  />
-                </div>
-              </>
-            )}
-          </Section>
         </div>
       )}
     </aside>
   );
 }
 
-interface PoseSliderRowProps {
+interface SliderRowProps {
   label: string;
   min: number;
   max: number;
@@ -195,16 +83,7 @@ interface PoseSliderRowProps {
   onChange: (v: number) => void;
 }
 
-function PoseSliderRow({
-  label,
-  min,
-  max,
-  step,
-  value,
-  unit,
-  display,
-  onChange,
-}: PoseSliderRowProps) {
+function SliderRow({ label, min, max, step, value, unit, display, onChange }: SliderRowProps) {
   return (
     <div style={styles.sliderRow}>
       <span style={styles.sliderLabel}>{label}</span>
@@ -319,17 +198,6 @@ const styles = {
     padding: '2px 4px',
     fontSize: 12,
   },
-  checkRow: {
-    display: 'flex',
-    alignItems: 'center',
-    gap: 6,
-    fontSize: 12,
-    color: '#cdd6f4',
-    cursor: 'pointer',
-    marginBottom: 8,
-  },
-  poseLabel: { fontSize: 11, color: '#6c7086', margin: '0 0 4px' },
-  kfControls: { marginTop: 6 },
   sliderRow: {
     display: 'flex',
     alignItems: 'center',

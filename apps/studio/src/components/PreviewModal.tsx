@@ -66,7 +66,6 @@ export function PreviewModal({ onClose }: Props) {
               zOrder: layer.zOrder,
               response: {},
               imageData,
-              ...(layer.poseEnabled ? { pose: layer.pose } : {}),
             };
           }),
         );
@@ -128,9 +127,7 @@ export function PreviewModal({ onClose }: Props) {
           {!error && !src && <p style={styles.loading}>Encoding…</p>}
           {src && <xflip-card src={src} tilt-max={30} style={styles.card} />}
         </div>
-        <p style={styles.footer}>
-          This preview uses the actual xflip-card viewer. Pose rig responds to mouse tilt.
-        </p>
+        <p style={styles.footer}>This preview uses the actual xflip-card viewer.</p>
       </div>
     </div>
   );

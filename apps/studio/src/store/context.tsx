@@ -36,7 +36,6 @@ export function StudioProvider({ children }: { children: React.ReactNode }) {
             rawDispatch({ type: 'ADD_LAYER', layer });
           }
           rawDispatch({ type: 'SET_DIMENSIONS', width: saved.width, height: saved.height });
-          rawDispatch({ type: 'SET_PREVIEW_TILT', nx: saved.previewNx, ny: saved.previewNy });
         }
       })
       .catch(() => {})

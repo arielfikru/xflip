@@ -33,7 +33,7 @@ export function LayerPanel() {
     const existing = project.layers.length;
     Array.from(files).forEach((file, i) => {
       const url = URL.createObjectURL(file);
-      const layer = createLayer(file, url, existing + i, project.gridSize);
+      const layer = createLayer(file, url, existing + i);
       dispatch({ type: 'ADD_LAYER', layer });
     });
   };
@@ -49,7 +49,7 @@ export function LayerPanel() {
     const blob = await makeWhiteBlob(project.width, project.height);
     const url = URL.createObjectURL(blob);
     const zOrder = project.layers.length;
-    const layer = createLayer(blob, url, zOrder, project.gridSize);
+    const layer = createLayer(blob, url, zOrder);
     dispatch({
       type: 'ADD_LAYER',
       layer: {
@@ -196,21 +196,6 @@ export function LayerPanel() {
                     ▼
                   </button>
                 </div>
-                <label style={styles.poseToggle} title="Enable pose rig">
-                  <input
-                    type="checkbox"
-                    checked={layer.poseEnabled}
-                    onChange={(e) =>
-                      dispatch({
-                        type: 'SET_LAYER_POSE_ENABLED',
-                        layerId: layer.id,
-                        enabled: e.target.checked,
-                      })
-                    }
-                    onClick={(e) => e.stopPropagation()}
-                  />
-                  P
-                </label>
                 <button
                   type="button"
                   style={styles.removeBtn}
@@ -289,14 +274,6 @@ const styles = {
     overflow: 'hidden',
     textOverflow: 'ellipsis',
     whiteSpace: 'nowrap' as const,
-  },
-  poseToggle: {
-    display: 'flex',
-    alignItems: 'center',
-    gap: 2,
-    fontSize: 11,
-    color: '#89b4fa',
-    cursor: 'pointer',
   },
   removeBtn: {
     background: 'none',

@@ -1,7 +1,3 @@
-import type { PoseKeyframe, XflipPose } from '@xflip/core';
-
-export type { PoseKeyframe, XflipPose };
-
 /** One layer in the studio project. */
 export interface StudioLayer {
   id: number;
@@ -14,12 +10,9 @@ export interface StudioLayer {
   opacity: number; // 0–255, maps to CSS opacity
   blendMode: string; // CSS mix-blend-mode value
   effectType: string;
-  /** Whether to include a pOse chunk for this layer. */
-  poseEnabled: boolean;
-  pose: XflipPose;
 }
 
-/** Studio project: flat + layered card state. */
+/** Studio project: flat layered card state. */
 export interface StudioProject {
   /** Canvas dimensions in pixels. */
   width: number;
@@ -27,13 +20,6 @@ export interface StudioProject {
   layers: StudioLayer[];
   /** Currently selected layer id, or null. */
   selectedLayerId: number | null;
-  /** Active pose cell index [0, gridSize²). */
-  activePoseCell: number;
-  /** Grid size for all layers. */
-  gridSize: 3 | 5;
-  /** Preview tilt as normalized [-1, +1]. */
-  previewNx: number;
-  previewNy: number;
 }
 
 export type StudioAction =
@@ -44,9 +30,5 @@ export type StudioAction =
   | { type: 'SET_LAYER_OPACITY'; layerId: number; opacity: number }
   | { type: 'SET_LAYER_BLEND_MODE'; layerId: number; blendMode: string }
   | { type: 'SET_LAYER_EFFECT_TYPE'; layerId: number; effectType: string }
-  | { type: 'SET_LAYER_POSE_CELL'; layerId: number; cellIndex: number; keyframe: PoseKeyframe }
-  | { type: 'SET_LAYER_POSE_ENABLED'; layerId: number; enabled: boolean }
-  | { type: 'SET_ACTIVE_POSE_CELL'; cellIndex: number }
-  | { type: 'SET_PREVIEW_TILT'; nx: number; ny: number }
   | { type: 'SET_DIMENSIONS'; width: number; height: number }
   | { type: 'RESET' };

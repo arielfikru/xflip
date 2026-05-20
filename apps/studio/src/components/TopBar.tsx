@@ -45,7 +45,6 @@ export function TopBar() {
             zOrder: layer.zOrder,
             response: {},
             imageData,
-            ...(layer.poseEnabled ? { pose: layer.pose } : {}),
           } as const;
         }),
       );

@@ -40,8 +40,6 @@ export async function saveProject(project: StudioProject): Promise<void> {
           opacity: l.opacity,
           blendMode: l.blendMode,
           effectType: l.effectType,
-          poseEnabled: l.poseEnabled,
-          pose: l.pose,
         };
         return p;
       }),
@@ -87,8 +85,6 @@ export async function loadProject(): Promise<StudioProject | null> {
             opacity: l.opacity,
             blendMode: l.blendMode,
             effectType: l.effectType,
-            poseEnabled: l.poseEnabled,
-            pose: l.pose,
           };
         }),
       };

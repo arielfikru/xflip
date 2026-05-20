@@ -1,4 +1,3 @@
-import { samplePose } from '@xflip/core';
 import type React from 'react';
 import { useRef } from 'react';
 import { useStudio } from '../store/context.js';
@@ -8,7 +7,6 @@ export function Canvas() {
   const canvasRef = useRef<HTMLDivElement>(null);
 
   const sorted = [...project.layers].sort((a, b) => a.zOrder - b.zOrder);
-  const { previewNx: nx, previewNy: ny } = project;
 
   return (
     <div style={styles.wrapper}>
@@ -17,7 +15,6 @@ export function Canvas() {
         style={{ ...styles.canvas, width: project.width / 2, height: project.height / 2 }}
       >
         {sorted.map((layer) => {
-          const kf = layer.poseEnabled ? samplePose(layer.pose, nx, ny) : null;
           const isSelected = project.selectedLayerId === layer.id;
           return (
             <img
@@ -27,11 +24,9 @@ export function Canvas() {
               draggable={false}
               style={{
                 ...styles.layerImg,
-                opacity: (layer.opacity / 255) * (kf?.opacity ?? 1),
+                opacity: layer.opacity / 255,
                 mixBlendMode: layer.blendMode as React.CSSProperties['mixBlendMode'],
-                transform: kf
-                  ? `perspective(800px) translate3d(${kf.tx}px,${kf.ty}px,0) rotateX(${kf.rotationXRad}rad) rotateY(${kf.rotationYRad}rad) scale(${kf.scale})`
-                  : 'none',
+                transform: 'none',
                 outline: isSelected ? '2px solid #89b4fa' : 'none',
                 cursor: 'pointer',
               }}
@@ -45,12 +40,7 @@ export function Canvas() {
         {sorted.length === 0 && <div style={styles.empty}>Add layers from the panel</div>}
       </div>
       <div style={styles.footer}>
-        <span style={styles.tiltInfo}>
-          tiltX {nx >= 0 ? '+' : ''}
-          {nx.toFixed(2)} · tiltY {ny >= 0 ? '+' : ''}
-          {ny.toFixed(2)}
-        </span>
-        <span style={styles.hint}>click layer to select · edit transforms in Inspector</span>
+        <span style={styles.hint}>click layer to select · edit in Inspector</span>
       </div>
     </div>
   );
@@ -96,11 +86,6 @@ const styles = {
     display: 'flex',
     gap: 16,
     alignItems: 'center',
-  },
-  tiltInfo: {
-    fontSize: 11,
-    color: '#6c7086',
-    fontFamily: 'monospace',
   },
   hint: {
     fontSize: 10,

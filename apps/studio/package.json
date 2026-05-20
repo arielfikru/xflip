@@ -2,7 +2,7 @@
   "name": "@xflip/studio",
   "version": "0.0.0",
   "private": true,
-  "description": "xflip Studio — pose rig authoring tool",
+  "description": "xflip Studio — layered card authoring tool",
   "type": "module",
   "scripts": {
     "dev": "vite",
