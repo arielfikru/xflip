@@ -10,6 +10,7 @@
 
 import { type ParsedChunk, type ParseOptions, parseChunks } from './chunks.js';
 import { XflipParseError } from './errors.js';
+import { parseHefx, parseLayerChunk } from './layers.js';
 import {
   FLIP_AXIS_CODES,
   type FlipAxis,
@@ -17,6 +18,8 @@ import {
   type ImageFormat,
   type XflipFile,
   type XflipHead,
+  type XflipHefx,
+  type XflipLayerChunk,
 } from './types.js';
 
 const HEAD_PAYLOAD_LENGTH = 12;
@@ -66,7 +69,7 @@ export function decode(bytes: Uint8Array, options?: ParseOptions): XflipFile {
   const frnt = parsed.chunks[frntIndex] as ParsedChunk;
   const back = parsed.chunks[backIndex] as ParsedChunk;
 
-  const ancillary = collectAncillary(parsed.chunks);
+  const { ancillary, frontLayers, backLayers, effects } = collectAncillary(parsed.chunks);
 
   const file: XflipFile = {
     versionMajor: parsed.versionMajor,
@@ -75,9 +78,10 @@ export function decode(bytes: Uint8Array, options?: ParseOptions): XflipFile {
     front: copy(frnt.payload),
     back: copy(back.payload),
   };
-  if (ancillary.size > 0) {
-    return { ...file, ancillary };
-  }
+  if (frontLayers) file.frontLayers = frontLayers;
+  if (backLayers) file.backLayers = backLayers;
+  if (effects) file.effects = effects;
+  if (ancillary.size > 0) file.ancillary = ancillary;
   return file;
 }
 
@@ -140,15 +144,53 @@ const lookupFlipAxis = (code: number, offset: number): FlipAxis => {
   return name;
 };
 
-const collectAncillary = (chunks: readonly ParsedChunk[]): Map<string, Uint8Array> => {
-  const out = new Map<string, Uint8Array>();
+interface AncillaryBundle {
+  ancillary: Map<string, Uint8Array>;
+  frontLayers?: XflipLayerChunk;
+  backLayers?: XflipLayerChunk;
+  effects?: XflipHefx;
+}
+
+const collectAncillary = (chunks: readonly ParsedChunk[]): AncillaryBundle => {
+  const bundle: AncillaryBundle = { ancillary: new Map<string, Uint8Array>() };
   for (const chunk of chunks) {
     if (chunk.critical) continue;
-    // Last occurrence wins for duplicates (spec doesn't forbid duplicates;
-    // codec preserves the final value as authoritative).
-    out.set(chunk.type, copy(chunk.payload));
+    // Last occurrence wins for duplicates (spec doesn't forbid duplicates).
+    if (chunk.type === 'fLyr') {
+      const lifted = tryLift(() => parseLayerChunk(chunk.payload));
+      if (lifted) {
+        bundle.frontLayers = lifted;
+        bundle.ancillary.delete('fLyr');
+        continue;
+      }
+    } else if (chunk.type === 'bLyr') {
+      const lifted = tryLift(() => parseLayerChunk(chunk.payload));
+      if (lifted) {
+        bundle.backLayers = lifted;
+        bundle.ancillary.delete('bLyr');
+        continue;
+      }
+    } else if (chunk.type === 'hEfx') {
+      const lifted = tryLift(() => parseHefx(chunk.payload));
+      if (lifted) {
+        bundle.effects = lifted;
+        bundle.ancillary.delete('hEfx');
+        continue;
+      }
+    }
+    // Failed parse OR not a layered chunk: preserve raw (spec §3.3
+    // ancillary chunks MUST NOT abort decode; degrade to opaque).
+    bundle.ancillary.set(chunk.type, copy(chunk.payload));
   }
-  return out;
+  return bundle;
+};
+
+const tryLift = <T>(fn: () => T): T | undefined => {
+  try {
+    return fn();
+  } catch {
+    return undefined;
+  }
 };
 
 const copy = (view: Uint8Array): Uint8Array => {

@@ -64,9 +64,125 @@ export interface XflipHead {
 }
 
 /**
- * Decoded xflip file. v1.0 surface only (no layered effects).
+ * Blend mode names per spec v0.2 §5.6.1.
+ */
+export type BlendMode =
+  | 'normal'
+  | 'multiply'
+  | 'screen'
+  | 'overlay'
+  | 'add'
+  | 'color_dodge'
+  | 'color_burn'
+  | 'soft_light'
+  | 'hard_light'
+  | 'difference'
+  | 'luminosity'
+  | 'custom';
+
+/**
+ * Numeric blend-mode codes on the wire per spec v0.2 §5.6.1.
+ * Codes 0x0B-0xFE are reserved.
+ */
+export const BLEND_MODE_CODES = {
+  normal: 0x00,
+  multiply: 0x01,
+  screen: 0x02,
+  overlay: 0x03,
+  add: 0x04,
+  color_dodge: 0x05,
+  color_burn: 0x06,
+  soft_light: 0x07,
+  hard_light: 0x08,
+  difference: 0x09,
+  luminosity: 0x0a,
+  custom: 0xff,
+} as const satisfies Record<BlendMode, number>;
+
+/**
+ * Per-layer response parameters per spec v0.2 §5.6.2. Schema is open;
+ * unknown keys are preserved on the `extras` field after parse.
+ */
+export interface XflipLayerResponse {
+  input_source?: 'mouse' | 'tilt' | 'time' | 'auto';
+  response_axis?: 'x' | 'y' | 'xy' | 'radial' | 'angle' | 'none';
+  response_curve?: 'linear' | 'ease' | 'ease-in' | 'ease-out' | 'wave' | 'step';
+  intensity?: number;
+  offset_max_x?: number;
+  offset_max_y?: number;
+  rotation_max?: number;
+  scale_range?: readonly [number, number];
+  phase_offset?: number;
+  frequency?: number;
+  mask_threshold?: number;
+  /** Implementation-specific extension object (opaque). */
+  custom?: Record<string, unknown>;
+  /** Any non-standard keys preserved verbatim (round-trip safe). */
+  extras?: Record<string, unknown>;
+}
+
+/**
+ * Decoded layer record per spec v0.2 §5.6.
+ */
+export interface XflipLayer {
+  /** Unique ID within the parent chunk (0-255). */
+  layerId: number;
+  /** Image format for `imageData` (same code-space as HEAD). */
+  format: ImageFormat;
+  /** Blend mode for compositing over previous layers. */
+  blendMode: BlendMode;
+  /** Non-empty semantic effect type (Appendix B or `x-*` custom). */
+  effectType: string;
+  /** Alpha multiplier (0-255; 255 = fully opaque). */
+  opacity: number;
+  /** Stacking order. Lower = drawn first (bottom). */
+  zOrder: number;
+  /** Parsed per-layer response parameters. */
+  response: XflipLayerResponse;
+  /** Encoded image data (raw bytes of a PNG/JPEG/... file). */
+  imageData: Uint8Array;
+}
+
+/**
+ * Decoded `fLyr` or `bLyr` payload per spec v0.2 §5.6.
+ */
+export interface XflipLayerChunk {
+  /** Layer format version (currently 1). */
+  version: number;
+  /** Reserved bit field; spec requires 0. Preserved on decode. */
+  flags: number;
+  /** Layer records in chunk order. layer_count ∈ [1, 255]. */
+  layers: readonly XflipLayer[];
+}
+
+/**
+ * Decoded `hEfx` global parameters per spec v0.2 §5.7. Schema is open;
+ * unknown keys are preserved on `extras` for round-trip safety.
+ */
+export interface XflipHefx {
+  tilt_sensitivity?: number;
+  tilt_max_angle?: number;
+  perspective?: number;
+  ambient_intensity?: number;
+  card_material?: 'matte' | 'glossy' | 'holographic' | 'foil' | 'prismatic';
+  surface_finish?: 'smooth' | 'linen' | 'etched' | 'embossed';
+  face_scope?: {
+    front?: Record<string, unknown>;
+    back?: Record<string, unknown>;
+  };
+  interaction_modes?: readonly string[];
+  fallback_behavior?: 'static' | 'auto-animate';
+  custom?: Record<string, unknown>;
+  /** Any non-standard top-level keys preserved verbatim. */
+  extras?: Record<string, unknown>;
+}
+
+/**
+ * Decoded xflip file. v1.1 surface (layered effects included).
  *
- * Layered effect fields (`fLyr`, `bLyr`, `hEfx`) will be added in P2.
+ * For v1.0 files (no `fLyr`/`bLyr`/`hEfx`), the corresponding optional
+ * fields are absent. For v1.1 files, registered layered chunks are lifted
+ * out of `ancillary` and exposed as typed objects.
  */
 export interface XflipFile {
   /** Format version major (currently 1). */
@@ -78,8 +194,16 @@ export interface XflipFile {
   front: Uint8Array;
   /** Raw bytes of the back image file. */
   back: Uint8Array;
+  /** Decoded `fLyr` chunk if present. */
+  frontLayers?: XflipLayerChunk;
+  /** Decoded `bLyr` chunk if present. */
+  backLayers?: XflipLayerChunk;
+  /** Decoded `hEfx` chunk if present. */
+  effects?: XflipHefx;
   /** Optional ancillary chunks preserved as raw payloads, keyed by chunk type.
-   *  Keys are 4-character ASCII tags; both registered (`META`, `tHmb`, ...)
-   *  and unknown lowercase-first tags are preserved verbatim. */
+   *  Keys are 4-character ASCII tags. Registered layered chunks
+   *  (`fLyr`/`bLyr`/`hEfx`) are NOT included here — they appear on their
+   *  own typed fields. Other ancillaries (`META`, `tHmb`, ..., and unknown
+   *  lowercase-first tags) are preserved verbatim. */
   ancillary?: ReadonlyMap<string, Uint8Array>;
 }

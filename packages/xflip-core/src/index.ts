@@ -28,6 +28,17 @@ export {
   XflipError,
   XflipParseError,
 } from './errors.js';
-
-export type { ChunkType, FlipAxis, ImageFormat, XflipFile, XflipHead } from './types.js';
-export { FLIP_AXIS_CODES, IMAGE_FORMAT_CODES } from './types.js';
+export { parseHefx, parseLayerChunk, serializeHefx, serializeLayerChunk } from './layers.js';
+export type {
+  BlendMode,
+  ChunkType,
+  FlipAxis,
+  ImageFormat,
+  XflipFile,
+  XflipHead,
+  XflipHefx,
+  XflipLayer,
+  XflipLayerChunk,
+  XflipLayerResponse,
+} from './types.js';
+export { BLEND_MODE_CODES, FLIP_AXIS_CODES, IMAGE_FORMAT_CODES } from './types.js';

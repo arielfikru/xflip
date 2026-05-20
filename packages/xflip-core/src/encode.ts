@@ -9,7 +9,10 @@
 import { BytesWriter } from './bytes.js';
 import { writeChunk, writeSignature } from './chunks.js';
 import { XflipEncodeError } from './errors.js';
+import { serializeHefx, serializeLayerChunk } from './layers.js';
 import { FLIP_AXIS_CODES, IMAGE_FORMAT_CODES, type XflipFile, type XflipHead } from './types.js';
+
+const LAYERED_KEYS = new Set(['fLyr', 'bLyr', 'hEfx']);
 
 const MAX_DIMENSION = 0xffffffff;
 
@@ -27,19 +30,53 @@ const MAX_DIMENSION = 0xffffffff;
  *   format name, flags byte out of uint8 range, or chunk-too-large.
  */
 export function encode(file: XflipFile): Uint8Array {
+  const fLyrPayload = resolveLayered(file, 'frontLayers', 'fLyr', serializeLayerChunk);
+  const bLyrPayload = resolveLayered(file, 'backLayers', 'bLyr', serializeLayerChunk);
+  const hEfxPayload = resolveLayered(file, 'effects', 'hEfx', serializeHefx);
+
   const writer = new BytesWriter(
-    file.front.length + file.back.length + 64 + estimateAncillary(file.ancillary),
+    file.front.length +
+      file.back.length +
+      64 +
+      estimateAncillary(file.ancillary) +
+      (fLyrPayload?.length ?? 0) +
+      (bLyrPayload?.length ?? 0) +
+      (hEfxPayload?.length ?? 0),
   );
   writeSignature(writer, file.versionMajor, file.versionMinor);
   writeChunk(writer, 'HEAD', encodeHead(file.head));
   if (file.ancillary) {
-    for (const [type, payload] of file.ancillary) writeChunk(writer, type, payload);
+    for (const [type, payload] of file.ancillary) {
+      if (LAYERED_KEYS.has(type)) continue; // emitted at spec-mandated positions below
+      writeChunk(writer, type, payload);
+    }
   }
   writeChunk(writer, 'FRNT', file.front);
+  if (fLyrPayload) writeChunk(writer, 'fLyr', fLyrPayload);
   writeChunk(writer, 'BACK', file.back);
+  if (bLyrPayload) writeChunk(writer, 'bLyr', bLyrPayload);
+  if (hEfxPayload) writeChunk(writer, 'hEfx', hEfxPayload);
   writeChunk(writer, 'ENDX', new Uint8Array());
   return writer.toBytes();
 }
+
+const resolveLayered = <K extends 'frontLayers' | 'backLayers' | 'effects'>(
+  file: XflipFile,
+  field: K,
+  ancillaryKey: 'fLyr' | 'bLyr' | 'hEfx',
+  serialize: (v: NonNullable<XflipFile[K]>) => Uint8Array,
+): Uint8Array | undefined => {
+  const typed = file[field];
+  const raw = file.ancillary?.get(ancillaryKey);
+  if (typed && raw) {
+    throw new XflipEncodeError(
+      `conflicting source for "${ancillaryKey}": both file.${field} and file.ancillary["${ancillaryKey}"] are set`,
+    );
+  }
+  if (typed) return serialize(typed as NonNullable<XflipFile[K]>);
+  if (raw) return raw;
+  return undefined;
+};
 
 const encodeHead = (head: XflipHead): Uint8Array => {
   if (!isUint32(head.width) || head.width === 0 || head.width > MAX_DIMENSION) {
