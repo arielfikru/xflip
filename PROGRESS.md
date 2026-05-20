@@ -4,9 +4,9 @@
 > Schema is stable; agents append rows rather than rewriting history.
 
 **Last updated:** 2026-05-20
-**Current phase:** P5 (xflip-react)
-**Current task:** P5.7 (Size budget entry for `@xflip/react`)
-**Status:** P5.6 done. `packages/xflip-react/README.md` covers install, SSR safety guarantee, `<XflipCard>` props table, ref forwarding example, the JSX intrinsic-element augmentation note, and the `useXflip(src)` state machine. P5.5 done. `<XflipCard>` test suite widened to cover tiltMax prop updates, className/style/hidden/aria-label forwarding (React's custom-element class-attr heuristic accommodated), element identity across `src` changes, ref detach on unmount, callback-ref clearing, and listener swap when `onLoad` reference changes. Suite at 392 tests (+6); biome + typecheck clean. Next: P5.6 ships the package README with copy-paste examples for `<XflipCard>` and `useXflip`.
+**Current phase:** P6 (playground)
+**Current task:** P6.1 (Playground app scaffold)
+**Status:** P5 DONE. All 7 tasks shipped: skeleton, `<XflipCard>` wrapper, `useXflip(src)` hook, SSR safety, widened tests (392 total), README, size budget (`@xflip/react` 4.46 KB ≤ 5 KB gzip with `react`/`react-dom`/`react/jsx-runtime`/`@xflip/viewer` ignored). Next phase: P6 playground app — interactive demo of `<XflipCard>` + `useXflip` with real `.xflip` fixtures. `<XflipCard>` test suite widened to cover tiltMax prop updates, className/style/hidden/aria-label forwarding (React's custom-element class-attr heuristic accommodated), element identity across `src` changes, ref detach on unmount, callback-ref clearing, and listener swap when `onLoad` reference changes. Suite at 392 tests (+6); biome + typecheck clean. Next: P5.6 ships the package README with copy-paste examples for `<XflipCard>` and `useXflip`.
 
 **P4.6 status (history):** CI `cli-smoke` job builds the CLI bin and drives `scripts/cli-smoke.mjs` end-to-end on ubuntu / macOS / windows (help, create, inspect, validate, extract, layers add, validate of layered output, META round-trip, unknown-command exit-2). Local: 9/9 checks pass.
 
@@ -18,11 +18,12 @@
 
 ## Quick Resume Pointer
 
-**Next Task:** `P5.7` — Add a `@xflip/react` entry to the root
-`package.json` `size-limit` block. Target ≤ 5 KB gzip on top of
-`@xflip/viewer`; verify via `pnpm size`. If the budget is tight,
-inspect the dist for inadvertent runtime imports before raising the
-ceiling.
+**Next Task:** `P6.1` — Scaffold `apps/playground` as a Vite + React
+app that consumes `@xflip/react`. Should include: a file picker for
+local `.xflip` files (via `URL.createObjectURL`), a small library of
+prebuilt fixtures shipped from `tests/fixtures`, and a sidebar that
+shows the decoded `XflipFile` head + layer metadata via `useXflip`.
+Keep it under 200 LOC; visual polish is P6.2+.
 
 **Concrete next actions** for P1 (per AGENTS.md Phase 1 + PROGRESS Phase 1 breakdown):
 
@@ -86,7 +87,7 @@ Mark each phase done only when its AGENTS.md DoD is fully met.
 | P2    | xflip-core v1.1   | ✅ DONE   | 2026-05-20 | 2026-05-20 | 229 tests; layered chunks lifted to typed fields |
 | P3    | xflip-viewer      | ✅ DONE   | 2026-05-20 | 2026-05-20 | All 9 tasks shipped; Playwright matrix in CI; viewer 6.82 KB gzip |
 | P4    | xflip-cli         | ✅ DONE   | 2026-05-20 | 2026-05-20 | 5 subcommands; CI smoke matrix; README + ADR 0003 |
-| P5    | xflip-react       | 🚧 IN PROGRESS | 2026-05-20 | -         | P5.1 scaffold landed (tsup, peer-dep React 18+) |
+| P5    | xflip-react       | ✅ DONE   | 2026-05-20 | 2026-05-20 | All 7 tasks shipped; bundle 4.46 KB ≤ 5 KB; SSR-safe |
 | P6    | playground        | ☐ TODO   | -         | -         | |
 | P7    | docs              | ☐ TODO   | -         | -         | |
 | P8    | launch            | ☐ TODO   | -         | -         | Requires user OK |
@@ -103,7 +104,8 @@ Append rows as tasks complete. Format:
 
 | Date       | Task   | Description                         | Commit   | Notes |
 | ---------- | ------ | ----------------------------------- | -------- | ----- |
-| 2026-05-20 | P5.6   | `packages/xflip-react/README.md` — install, SSR safety guarantee, `<XflipCard>` props table, ref forwarding example, JSX-augmentation note, `useXflip(src)` state machine | (this)   | docs only; no test delta |
+| 2026-05-20 | P5.7   | size-limit entry `@xflip/react (ESM, gzip)` at 5 KB ceiling; ignores `react`, `react-dom`, `react/jsx-runtime`, `@xflip/viewer`; closes P5 | (this)   | measured 4.46 KB gzip incl. `@xflip/core` decode |
+| 2026-05-20 | P5.6   | `packages/xflip-react/README.md` — install, SSR safety guarantee, `<XflipCard>` props table, ref forwarding example, JSX-augmentation note, `useXflip(src)` state machine | 8ae6028  | docs only; no test delta |
 | 2026-05-20 | P5.5   | `<XflipCard>` unit-test coverage widened: tiltMax update on rerender, HTML attribute forwarding (class/style/hidden/aria-label), element identity across src changes, ref detach on unmount, callback-ref clearing, onLoad listener swap on handler change | 52ef3af  | +6 tests (392 total); no React Testing Library dep needed; raw `createRoot` + `flushSync`/`act` harness suffices |
 | 2026-05-20 | P5.4   | SSR safety for `@xflip/react`: drop runtime imports from `@xflip/viewer`, inline `XFLIP_CARD_TAG`, lazy-load `defineXflipCard` via dynamic `import('@xflip/viewer')` inside the mount effect | 6a8195b  | +2 SSR tests (386 total); Node smoke `import('./dist/index.js')` returns 3 keys |
 | 2026-05-20 | P5.3   | `useXflip(src)` React hook: fetch + decode via `@xflip/core`; returns `{ file, error, status }` with `idle`/`loading`/`success`/`error` states; AbortController cancels in-flight on `src` change + unmount; AbortError swallowed; non-Error reasons wrapped | b30fe4c  | +7 tests (384 total); test harness uses React `act` with `IS_REACT_ACT_ENVIRONMENT=true` |
@@ -258,7 +260,7 @@ command; tested on macOS, Linux, Windows.
 | P5.4    | SSR safety: no `document` access at module top-level; client-only `define` import gated by `useEffect` | ✅      |
 | P5.5    | Tests (happy-dom + React Testing Library): mount, prop forwarding, event callbacks, ref | ✅      |
 | P5.6    | Package README + usage examples                                   | ✅      |
-| P5.7    | Size budget entry for `@xflip/react` in root `package.json`       | ☐      |
+| P5.7    | Size budget entry for `@xflip/react` in root `package.json`       | ✅      |
 
 **P5 DoD:** Per AGENTS.md §5 Phase 5 — `<XflipCard>` renders xflip files
 in a React app; props are fully typed; events flow through React handlers;

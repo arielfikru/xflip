@@ -59,6 +59,19 @@
       "import": "{ XflipCardElement }",
       "limit": "50 KB",
       "gzip": true
+    },
+    {
+      "name": "@xflip/react (ESM, gzip)",
+      "path": "packages/xflip-react/dist/index.js",
+      "import": "{ XflipCard, useXflip }",
+      "ignore": [
+        "react",
+        "react-dom",
+        "react/jsx-runtime",
+        "@xflip/viewer"
+      ],
+      "limit": "5 KB",
+      "gzip": true
     }
   ]
 }
