@@ -46,15 +46,20 @@ export type ChunkType =
   | 'hEfx';
 
 /**
- * Decoded HEAD chunk per spec v0.2 Section 4.1.
+ * Decoded HEAD chunk per spec v0.2 §4.1.
  */
 export interface XflipHead {
+  /** Canvas width in pixels. uint32, must be ≥ 1. */
   width: number;
+  /** Canvas height in pixels. uint32, must be ≥ 1. */
   height: number;
+  /** Image format for the FRNT payload. */
   frontFormat: ImageFormat;
+  /** Image format for the BACK payload. */
   backFormat: ImageFormat;
+  /** Suggested flip axis. Renderers MAY ignore this hint. */
   flipAxis: FlipAxis;
-  /** Bit 0: DEFAULT_BACK. Bit 1: NO_FLIP_ANIM. Other bits reserved. */
+  /** Bit flags (uint8). Bit 0: DEFAULT_BACK. Bit 1: NO_FLIP_ANIM. Other bits reserved. */
   flags: number;
 }
 
