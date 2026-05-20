@@ -8,6 +8,8 @@
  * @packageDocumentation
  */
 
+export type { ExtractedFile, ExtractOptions, ExtractResult } from './extract.js';
+export { extract } from './extract.js';
 export type { ChunkSummary, InspectOptions, InspectResult } from './inspect.js';
 export { inspect } from './inspect.js';
 export type { ValidateOptions, ValidateResult } from './validate.js';
