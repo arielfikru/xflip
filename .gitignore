@@ -48,6 +48,10 @@ tests/fixtures/generated/
 .vite/
 .playwright-mcp/
 
+# Local-only sample inputs (user-provided, not part of the repo)
+/sample.jpg
+holo-fixed*.png
+
 # Misc
 *.tmp
 .tmp/

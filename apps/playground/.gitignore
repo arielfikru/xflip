@@ -2,4 +2,5 @@ dist
 node_modules
 public/sample.xflip
 public/sample-layered.xflip
+public/sample-holo.xflip
 .vite

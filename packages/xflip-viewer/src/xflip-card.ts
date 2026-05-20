@@ -167,7 +167,16 @@ const TEMPLATE_HTML = `
     object-fit: contain;
     display: block;
     will-change: transform, opacity;
+    transform:
+      translate3d(
+        calc(var(--xflip-pointer-nx, 0) * var(--xflip-layer-offset-x, 0px)),
+        calc(var(--xflip-pointer-ny, 0) * var(--xflip-layer-offset-y, 0px)),
+        0
+      )
+      rotate(calc(var(--xflip-pointer-nx, 0) * var(--xflip-layer-rotation-max, 0deg)));
+    transition: transform var(--xflip-tilt-release, 400ms) ease-out;
   }
+  :host([data-tilting]) .layer { transition: none; }
   .status {
     position: absolute;
     inset: 0;
@@ -651,6 +660,10 @@ export class XflipCardElement extends HTMLElement {
     this.removeAttribute('data-tilting');
     this.style.setProperty('--xflip-tilt-x', '0deg');
     this.style.setProperty('--xflip-tilt-y', '0deg');
+    this.style.setProperty('--xflip-pointer-nx', '0');
+    this.style.setProperty('--xflip-pointer-ny', '0');
+    this.style.setProperty('--xflip-pointer-px', '50%');
+    this.style.setProperty('--xflip-pointer-py', '50%');
   }
 
   #scheduleTilt(): void {
@@ -663,6 +676,13 @@ export class XflipCardElement extends HTMLElement {
       // Pointer y maps to rotateX (top → tilt back); pointer x to rotateY.
       this.style.setProperty('--xflip-tilt-x', `${(-y * this.tiltMax).toFixed(2)}deg`);
       this.style.setProperty('--xflip-tilt-y', `${(x * this.tiltMax).toFixed(2)}deg`);
+      // Pointer-relative vars consumed by per-layer parallax + custom
+      // host CSS (e.g. specular highlights). `nx`/`ny` are signed in
+      // [-1, 1]; `px`/`py` are percentages in [0%, 100%].
+      this.style.setProperty('--xflip-pointer-nx', x.toFixed(3));
+      this.style.setProperty('--xflip-pointer-ny', y.toFixed(3));
+      this.style.setProperty('--xflip-pointer-px', `${(((x + 1) / 2) * 100).toFixed(2)}%`);
+      this.style.setProperty('--xflip-pointer-py', `${(((y + 1) / 2) * 100).toFixed(2)}%`);
     });
   }
 
