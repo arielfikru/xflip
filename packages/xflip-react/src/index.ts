@@ -1,9 +1,15 @@
 /**
  * `@xflip/react` — React wrapper around the `<xflip-card>` web component.
- *
- * P5.1 ships only the package skeleton. Component exports (`XflipCard`,
- * hooks, type augmentations for JSX intrinsic elements) land in
- * subsequent P5 tasks.
  */
+
+// Re-export viewer types so consumers don't need a direct dep on `@xflip/viewer`.
+export type {
+  XflipCardElement,
+  XflipErrorEventDetail,
+  XflipFace,
+  XflipLoadEventDetail,
+} from '@xflip/viewer';
+export type { XflipCardIntrinsicAttributes } from './jsx-intrinsic.js';
+export { XflipCard, type XflipCardProps } from './xflip-card.js';
 
 export const VERSION = '0.0.0';
