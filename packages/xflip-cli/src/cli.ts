@@ -3,7 +3,8 @@ import { mkdir, readFile, stat, writeFile } from 'node:fs/promises';
 import { join } from 'node:path';
 import { pathToFileURL } from 'node:url';
 import { parseArgs } from 'node:util';
-import { XflipError } from '@xflip/core';
+import { type FlipAxis, type ImageFormat, XflipError } from '@xflip/core';
+import { buildFile, formatFromExtension, isFlipAxis, isImageFormat } from './create.js';
 import { extract, formatExtractReport } from './extract.js';
 import { formatInspectReport, inspect } from './inspect.js';
 import { formatValidateReport, validate } from './validate.js';
@@ -19,6 +20,8 @@ Commands:
   inspect <file>          Print chunk structure of an xflip file
   validate <file>         Verify CRC + structural validity (exit 1 if invalid)
   extract <file> --to D   Write FRNT/BACK (+ META) into directory D
+  create --front A --back B --output O --width W --height H
+                          Build an .xflip file from two images
   help [command]          Show help for a command
 
 Run \`${PROGRAM} <command> --help\` for details.
@@ -32,6 +35,29 @@ signature and every CRC; exits non-zero on malformed input.
 
 Options:
       --strict-ancillary-crc   Treat ancillary CRC mismatches as fatal
+  -h, --help                   Show this help text
+`;
+
+const CREATE_HELP = `${PROGRAM} create --front <a> --back <b> --output <out> --width <W> --height <H> [options]
+
+Build an .xflip v1.0 file from two image inputs. Image formats are
+inferred from each input's filename extension (png, jpg/jpeg, webp,
+avif, jxl, bin/raw); use \`--front-format\` / \`--back-format\` to
+override or to supply a format when the extension is unrecognized.
+
+Options:
+      --front <path>           Source image for the front face (required)
+      --back <path>            Source image for the back face (required)
+      --output <path>          Output .xflip path (required)
+      --width <N>              Canvas width in pixels (required, 1..2^32-1)
+      --height <N>             Canvas height in pixels (required, 1..2^32-1)
+      --front-format <fmt>     Override inferred front format
+      --back-format <fmt>      Override inferred back format
+      --flip-axis <axis>       horizontal (default) | vertical | diagonal
+      --default-back           Set DEFAULT_BACK HEAD flag (bit 0)
+      --no-flip-anim           Set NO_FLIP_ANIM HEAD flag (bit 1)
+      --meta <path>            Embed META chunk from a UTF-8 JSON file
+      --force                  Overwrite an existing --output file
   -h, --help                   Show this help text
 `;
 
@@ -90,6 +116,8 @@ export async function run(argv: readonly string[], io: CliIo = defaultIo): Promi
       io.stdout(VALIDATE_HELP);
     } else if (target === 'extract') {
       io.stdout(EXTRACT_HELP);
+    } else if (target === 'create') {
+      io.stdout(CREATE_HELP);
     } else {
       io.stdout(ROOT_HELP);
     }
@@ -111,6 +139,10 @@ export async function run(argv: readonly string[], io: CliIo = defaultIo): Promi
 
   if (command === 'extract') {
     return runExtract(rest, io);
+  }
+
+  if (command === 'create') {
+    return runCreate(rest, io);
   }
 
   io.stderr(`${PROGRAM}: unknown command "${command}"`);
@@ -363,6 +395,238 @@ async function runExtract(argv: readonly string[], io: CliIo): Promise<number> {
   }
 
   io.stdout(formatExtractReport(plan, parsed.args.to));
+  return 0;
+}
+
+interface CreateCommandArgs {
+  readonly front: string;
+  readonly back: string;
+  readonly output: string;
+  readonly width: number;
+  readonly height: number;
+  readonly frontFormatOverride?: ImageFormat;
+  readonly backFormatOverride?: ImageFormat;
+  readonly flipAxis: FlipAxis;
+  readonly defaultBack: boolean;
+  readonly noFlipAnim: boolean;
+  readonly meta?: string;
+  readonly force: boolean;
+}
+
+type CreateParseResult =
+  | { readonly kind: 'args'; readonly args: CreateCommandArgs }
+  | { readonly kind: 'help' }
+  | { readonly kind: 'exit'; readonly code: number };
+
+function parseIntegerOption(raw: string, name: string): number | string {
+  if (!/^[0-9]+$/.test(raw)) return `--${name} must be a positive integer`;
+  const n = Number(raw);
+  if (!Number.isInteger(n) || n < 1 || n > 0xffffffff) {
+    return `--${name} must be in the range 1..4294967295`;
+  }
+  return n;
+}
+
+function parseCreateArgs(argv: readonly string[], io: CliIo): CreateParseResult {
+  let values: {
+    help?: boolean;
+    front?: string;
+    back?: string;
+    output?: string;
+    width?: string;
+    height?: string;
+    'front-format'?: string;
+    'back-format'?: string;
+    'flip-axis'?: string;
+    'default-back'?: boolean;
+    'no-flip-anim'?: boolean;
+    meta?: string;
+    force?: boolean;
+  };
+  let positionals: string[];
+  try {
+    const parsed = parseArgs({
+      args: [...argv],
+      options: {
+        help: { type: 'boolean', short: 'h' },
+        front: { type: 'string' },
+        back: { type: 'string' },
+        output: { type: 'string' },
+        width: { type: 'string' },
+        height: { type: 'string' },
+        'front-format': { type: 'string' },
+        'back-format': { type: 'string' },
+        'flip-axis': { type: 'string' },
+        'default-back': { type: 'boolean' },
+        'no-flip-anim': { type: 'boolean' },
+        meta: { type: 'string' },
+        force: { type: 'boolean' },
+      },
+      allowPositionals: true,
+    });
+    values = parsed.values;
+    positionals = parsed.positionals;
+  } catch (err) {
+    io.stderr(`${PROGRAM} create: ${(err as Error).message}`);
+    return { kind: 'exit', code: 2 };
+  }
+
+  if (values.help === true) return { kind: 'help' };
+
+  if (positionals.length > 0) {
+    io.stderr(`${PROGRAM} create: unexpected positional "${positionals[0]}"`);
+    return { kind: 'exit', code: 2 };
+  }
+
+  const required: ReadonlyArray<[string, string | undefined]> = [
+    ['--front', values.front],
+    ['--back', values.back],
+    ['--output', values.output],
+    ['--width', values.width],
+    ['--height', values.height],
+  ];
+  for (const [name, val] of required) {
+    if (val === undefined || val === '') {
+      io.stderr(`${PROGRAM} create: missing required ${name}`);
+      return { kind: 'exit', code: 2 };
+    }
+  }
+
+  const width = parseIntegerOption(values.width as string, 'width');
+  if (typeof width === 'string') {
+    io.stderr(`${PROGRAM} create: ${width}`);
+    return { kind: 'exit', code: 2 };
+  }
+  const height = parseIntegerOption(values.height as string, 'height');
+  if (typeof height === 'string') {
+    io.stderr(`${PROGRAM} create: ${height}`);
+    return { kind: 'exit', code: 2 };
+  }
+
+  let frontFormatOverride: ImageFormat | undefined;
+  if (values['front-format'] !== undefined) {
+    if (!isImageFormat(values['front-format'])) {
+      io.stderr(
+        `${PROGRAM} create: --front-format "${values['front-format']}" is not a known format`,
+      );
+      return { kind: 'exit', code: 2 };
+    }
+    frontFormatOverride = values['front-format'];
+  }
+  let backFormatOverride: ImageFormat | undefined;
+  if (values['back-format'] !== undefined) {
+    if (!isImageFormat(values['back-format'])) {
+      io.stderr(
+        `${PROGRAM} create: --back-format "${values['back-format']}" is not a known format`,
+      );
+      return { kind: 'exit', code: 2 };
+    }
+    backFormatOverride = values['back-format'];
+  }
+
+  let flipAxis: FlipAxis = 'horizontal';
+  if (values['flip-axis'] !== undefined) {
+    if (!isFlipAxis(values['flip-axis'])) {
+      io.stderr(`${PROGRAM} create: --flip-axis must be horizontal | vertical | diagonal`);
+      return { kind: 'exit', code: 2 };
+    }
+    flipAxis = values['flip-axis'];
+  }
+
+  const args: CreateCommandArgs = {
+    front: values.front as string,
+    back: values.back as string,
+    output: values.output as string,
+    width,
+    height,
+    flipAxis,
+    defaultBack: values['default-back'] === true,
+    noFlipAnim: values['no-flip-anim'] === true,
+    force: values.force === true,
+    ...(frontFormatOverride !== undefined ? { frontFormatOverride } : {}),
+    ...(backFormatOverride !== undefined ? { backFormatOverride } : {}),
+    ...(values.meta !== undefined ? { meta: values.meta } : {}),
+  };
+  return { kind: 'args', args };
+}
+
+async function runCreate(argv: readonly string[], io: CliIo): Promise<number> {
+  const parsed = parseCreateArgs(argv, io);
+  if (parsed.kind === 'help') {
+    io.stdout(CREATE_HELP);
+    return 0;
+  }
+  if (parsed.kind === 'exit') return parsed.code;
+  const a = parsed.args;
+
+  const frontFormat = a.frontFormatOverride ?? formatFromExtension(a.front);
+  if (frontFormat === undefined) {
+    io.stderr(`${PROGRAM} create: cannot infer format for "${a.front}"; pass --front-format`);
+    return 2;
+  }
+  const backFormat = a.backFormatOverride ?? formatFromExtension(a.back);
+  if (backFormat === undefined) {
+    io.stderr(`${PROGRAM} create: cannot infer format for "${a.back}"; pass --back-format`);
+    return 2;
+  }
+
+  const frontBytes = await readFileOrReport(a.front, io, 'create');
+  if (typeof frontBytes === 'number') return frontBytes;
+  const backBytes = await readFileOrReport(a.back, io, 'create');
+  if (typeof backBytes === 'number') return backBytes;
+
+  let metaBytes: Uint8Array | undefined;
+  if (a.meta !== undefined) {
+    const read = await readFileOrReport(a.meta, io, 'create');
+    if (typeof read === 'number') return read;
+    try {
+      JSON.parse(new TextDecoder('utf-8', { fatal: true }).decode(read));
+    } catch (err) {
+      io.stderr(
+        `${PROGRAM} create: --meta "${a.meta}" is not valid UTF-8 JSON: ${(err as Error).message}`,
+      );
+      return 1;
+    }
+    metaBytes = read;
+  }
+
+  if (!a.force && (await pathExists(a.output))) {
+    io.stderr(`${PROGRAM} create: refusing to overwrite "${a.output}" (use --force)`);
+    return 1;
+  }
+
+  let bytes: Uint8Array;
+  try {
+    bytes = buildFile({
+      front: frontBytes,
+      back: backBytes,
+      frontFormat,
+      backFormat,
+      width: a.width,
+      height: a.height,
+      flipAxis: a.flipAxis,
+      defaultBack: a.defaultBack,
+      noFlipAnim: a.noFlipAnim,
+      ...(metaBytes !== undefined ? { meta: metaBytes } : {}),
+    });
+  } catch (err) {
+    if (err instanceof XflipError) {
+      io.stderr(`${PROGRAM} create: ${err.name}: ${err.message}`);
+      return 1;
+    }
+    throw err;
+  }
+
+  try {
+    await writeFile(a.output, bytes);
+  } catch (err) {
+    io.stderr(`${PROGRAM} create: cannot write "${a.output}": ${(err as Error).message}`);
+    return 1;
+  }
+
+  io.stdout(
+    `Created ${a.output}  (xflip 1.0, ${bytes.byteLength} bytes, ${a.width}x${a.height} ${frontFormat}/${backFormat})`,
+  );
   return 0;
 }
 

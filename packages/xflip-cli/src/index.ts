@@ -8,6 +8,8 @@
  * @packageDocumentation
  */
 
+export type { CreateInputs } from './create.js';
+export { buildFile, formatFromExtension } from './create.js';
 export type { ExtractedFile, ExtractOptions, ExtractResult } from './extract.js';
 export { extract } from './extract.js';
 export type { ChunkSummary, InspectOptions, InspectResult } from './inspect.js';

@@ -262,4 +262,334 @@ describe('cli', () => {
     expect(code).toBe(0);
     expect(c.out.join('\n')).toContain('extract <file>');
   });
+
+  it('create builds an xflip file from two images', async () => {
+    const front = join(tmp, 'front.png');
+    const back = join(tmp, 'back.jpg');
+    const output = join(tmp, 'card.xflip');
+    await writeFile(front, new Uint8Array([0x89, 0x50, 0x4e, 0x47]));
+    await writeFile(back, new Uint8Array([0xff, 0xd8, 0xff]));
+    const c = capture();
+    const code = await run(
+      [
+        'create',
+        '--front',
+        front,
+        '--back',
+        back,
+        '--output',
+        output,
+        '--width',
+        '512',
+        '--height',
+        '720',
+      ],
+      c.io,
+    );
+    expect(code).toBe(0);
+    expect(c.out.join('\n')).toContain('Created');
+    const written = await readFile(output);
+    // Quick sanity: signature `XFLP\x01\x00`
+    expect(Array.from(written.subarray(0, 6))).toEqual([0x58, 0x46, 0x4c, 0x50, 0x01, 0x00]);
+  });
+
+  it('create embeds META from --meta file', async () => {
+    const front = join(tmp, 'f.png');
+    const back = join(tmp, 'b.png');
+    const meta = join(tmp, 'meta.json');
+    const output = join(tmp, 'card.xflip');
+    await writeFile(front, new Uint8Array([1]));
+    await writeFile(back, new Uint8Array([2]));
+    await writeFile(meta, '{"title":"Zapdos"}');
+    const c = capture();
+    const code = await run(
+      [
+        'create',
+        '--front',
+        front,
+        '--back',
+        back,
+        '--output',
+        output,
+        '--width',
+        '1',
+        '--height',
+        '1',
+        '--meta',
+        meta,
+      ],
+      c.io,
+    );
+    expect(code).toBe(0);
+    const bytes = await readFile(output);
+    expect(new TextDecoder().decode(bytes)).toContain('"title":"Zapdos"');
+  });
+
+  it('create rejects --meta when the file is not valid UTF-8 JSON', async () => {
+    const front = join(tmp, 'f.png');
+    const back = join(tmp, 'b.png');
+    const meta = join(tmp, 'meta.json');
+    const output = join(tmp, 'card.xflip');
+    await writeFile(front, new Uint8Array([1]));
+    await writeFile(back, new Uint8Array([2]));
+    await writeFile(meta, 'not json at all');
+    const c = capture();
+    const code = await run(
+      [
+        'create',
+        '--front',
+        front,
+        '--back',
+        back,
+        '--output',
+        output,
+        '--width',
+        '1',
+        '--height',
+        '1',
+        '--meta',
+        meta,
+      ],
+      c.io,
+    );
+    expect(code).toBe(1);
+    expect(c.err.join('\n')).toContain('not valid UTF-8 JSON');
+  });
+
+  it('create refuses to overwrite existing output without --force', async () => {
+    const front = join(tmp, 'f.png');
+    const back = join(tmp, 'b.png');
+    const output = join(tmp, 'card.xflip');
+    await writeFile(front, new Uint8Array([1]));
+    await writeFile(back, new Uint8Array([2]));
+    await writeFile(output, 'preexisting');
+    const c = capture();
+    const code = await run(
+      [
+        'create',
+        '--front',
+        front,
+        '--back',
+        back,
+        '--output',
+        output,
+        '--width',
+        '1',
+        '--height',
+        '1',
+      ],
+      c.io,
+    );
+    expect(code).toBe(1);
+    expect(c.err.join('\n')).toContain('refusing to overwrite');
+  });
+
+  it('create --force overwrites existing output', async () => {
+    const front = join(tmp, 'f.png');
+    const back = join(tmp, 'b.png');
+    const output = join(tmp, 'card.xflip');
+    await writeFile(front, new Uint8Array([1]));
+    await writeFile(back, new Uint8Array([2]));
+    await writeFile(output, 'preexisting');
+    const c = capture();
+    const code = await run(
+      [
+        'create',
+        '--front',
+        front,
+        '--back',
+        back,
+        '--output',
+        output,
+        '--width',
+        '1',
+        '--height',
+        '1',
+        '--force',
+      ],
+      c.io,
+    );
+    expect(code).toBe(0);
+  });
+
+  it('create demands --front-format when extension is unknown', async () => {
+    const front = join(tmp, 'noext');
+    const back = join(tmp, 'b.png');
+    const output = join(tmp, 'card.xflip');
+    await writeFile(front, new Uint8Array([1]));
+    await writeFile(back, new Uint8Array([2]));
+    const c = capture();
+    const code = await run(
+      [
+        'create',
+        '--front',
+        front,
+        '--back',
+        back,
+        '--output',
+        output,
+        '--width',
+        '1',
+        '--height',
+        '1',
+      ],
+      c.io,
+    );
+    expect(code).toBe(2);
+    expect(c.err.join('\n')).toContain('--front-format');
+  });
+
+  it('create honors --front-format / --back-format overrides', async () => {
+    const front = join(tmp, 'front.bin');
+    const back = join(tmp, 'back.bin');
+    const output = join(tmp, 'card.xflip');
+    await writeFile(front, new Uint8Array([1]));
+    await writeFile(back, new Uint8Array([2]));
+    const c = capture();
+    const code = await run(
+      [
+        'create',
+        '--front',
+        front,
+        '--back',
+        back,
+        '--output',
+        output,
+        '--width',
+        '1',
+        '--height',
+        '1',
+        '--front-format',
+        'webp',
+        '--back-format',
+        'avif',
+      ],
+      c.io,
+    );
+    expect(code).toBe(0);
+    expect(c.out.join('\n')).toContain('webp/avif');
+  });
+
+  it('create rejects unknown --front-format value', async () => {
+    const c = capture();
+    const code = await run(
+      [
+        'create',
+        '--front',
+        'x',
+        '--back',
+        'y',
+        '--output',
+        'z',
+        '--width',
+        '1',
+        '--height',
+        '1',
+        '--front-format',
+        'gif',
+      ],
+      c.io,
+    );
+    expect(code).toBe(2);
+    expect(c.err.join('\n')).toContain('not a known format');
+  });
+
+  it('create validates --flip-axis', async () => {
+    const c = capture();
+    const code = await run(
+      [
+        'create',
+        '--front',
+        'a.png',
+        '--back',
+        'b.png',
+        '--output',
+        'c.xflip',
+        '--width',
+        '1',
+        '--height',
+        '1',
+        '--flip-axis',
+        'sideways',
+      ],
+      c.io,
+    );
+    expect(code).toBe(2);
+    expect(c.err.join('\n')).toContain('--flip-axis');
+  });
+
+  it('create rejects non-integer --width', async () => {
+    const c = capture();
+    const code = await run(
+      [
+        'create',
+        '--front',
+        'a.png',
+        '--back',
+        'b.png',
+        '--output',
+        'c.xflip',
+        '--width',
+        '-5',
+        '--height',
+        '1',
+      ],
+      c.io,
+    );
+    expect(code).toBe(2);
+    expect(c.err.join('\n')).toContain('--width');
+  });
+
+  it('create missing --output exits 2', async () => {
+    const c = capture();
+    const code = await run(
+      ['create', '--front', 'a.png', '--back', 'b.png', '--width', '1', '--height', '1'],
+      c.io,
+    );
+    expect(code).toBe(2);
+    expect(c.err.join('\n')).toContain('--output');
+  });
+
+  it('create on unreadable --front exits 1', async () => {
+    const c = capture();
+    const code = await run(
+      [
+        'create',
+        '--front',
+        join(tmp, 'nope.png'),
+        '--back',
+        join(tmp, 'nope2.png'),
+        '--output',
+        join(tmp, 'card.xflip'),
+        '--width',
+        '1',
+        '--height',
+        '1',
+      ],
+      c.io,
+    );
+    expect(code).toBe(1);
+    expect(c.err.join('\n')).toMatch(/cannot read/);
+  });
+
+  it('create --help short-circuits', async () => {
+    const c = capture();
+    const code = await run(['create', '--help'], c.io);
+    expect(code).toBe(0);
+    expect(c.out.join('\n')).toContain('xflip create');
+  });
+
+  it('help create prints create-specific help', async () => {
+    const c = capture();
+    const code = await run(['help', 'create'], c.io);
+    expect(code).toBe(0);
+    expect(c.out.join('\n')).toContain('xflip create');
+  });
+
+  it('root help mentions create command', async () => {
+    const c = capture();
+    const code = await run([], c.io);
+    expect(code).toBe(0);
+    expect(c.out.join('\n')).toContain('create --front');
+  });
 });
