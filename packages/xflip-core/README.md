@@ -1,39 +1,97 @@
 # @xflip/core
 
-Zero-dependency TypeScript encoder and decoder for the
-[xflip image format](https://github.com/arielfikru/xflip).
+Encoder and decoder for the **xflip** image format — an open container for
+two-sided visual content (trading cards, collectibles, NFC-style flip
+media) with optional holographic effects.
 
-Runs in browser and Node 20+.
+Zero runtime dependencies. ESM only. Targets Node 20+ and evergreen
+browsers.
 
 ## Install
 
 ```bash
 pnpm add @xflip/core
+# or: npm install @xflip/core
 ```
 
-## Usage
+## Quick start
 
-```typescript
-import { decode, encode } from '@xflip/core';
+```ts
+import { decode, encode, type XflipFile } from '@xflip/core';
 
-// Decode
-const file = decode(bytes); // bytes: Uint8Array
+// Decode a buffer fetched from disk, network, or <input type="file">
+const file: XflipFile = decode(bytes);
 
-// Encode
-const out = encode({
-  head: { width: 320, height: 460, frontFormat: 'png', backFormat: 'png' },
-  front: pngBytes,
-  back: pngBackBytes,
-});
+console.log(file.head.width, file.head.height);
+console.log(file.head.frontFormat); // 'png' | 'jpeg' | 'webp' | 'avif' | 'jxl' | ...
+renderFront(file.front); // raw image bytes — pass to a decoder of your choice
+
+// Encode back to a self-contained xflip buffer
+const out: Uint8Array = encode(file);
 ```
 
-## Constraints
+## API surface
 
-- **Zero runtime dependencies.** Hand-implemented CRC32, hand-rolled big-endian
-  byte readers; uses only `Uint8Array` and `DataView` from the platform.
-- **Browser + Node.** Does not import `node:` modules. No `Buffer`.
-- **Spec fidelity.** Implements [xflip-spec-v0.2.md](../../xflip-spec-v0.2.md)
-  exactly. Big-endian, PNG-polynomial CRC32, chunk type code case-sensitive.
+### Primary
+
+| Symbol            | Purpose                                       |
+| ----------------- | --------------------------------------------- |
+| `decode(bytes)`   | Bytes → typed `XflipFile`                     |
+| `encode(file)`    | `XflipFile` → bytes                           |
+| `XflipFile`       | Decoded file shape (HEAD + FRNT + BACK + ...) |
+| `XflipHead`       | Decoded HEAD chunk fields                     |
+| `ImageFormat`     | `'raw' \| 'png' \| 'jpeg' \| 'webp' \| 'avif' \| 'jxl' \| 'custom'` |
+| `FlipAxis`        | `'horizontal' \| 'vertical' \| 'diagonal'`    |
+
+### Lower-level
+
+| Symbol                 | Purpose                                         |
+| ---------------------- | ----------------------------------------------- |
+| `parseChunks(bytes)`   | Iterate raw chunk list without HEAD parsing     |
+| `crc32(bytes)`         | CRC-32/ISO-HDLC (PNG polynomial) checksum       |
+| `crc32Concat(...spans)`| Multi-span CRC without joining buffers          |
+| `IMAGE_FORMAT_CODES`   | Name → wire byte (`png` → `0x01`, ...)          |
+| `FLIP_AXIS_CODES`      | Name → wire byte                                |
+
+### Errors
+
+All decoder/encoder failures throw a subclass of `XflipError`:
+
+| Class               | When                                          |
+| ------------------- | --------------------------------------------- |
+| `XflipParseError`   | Malformed bytes; carries the byte `offset`    |
+| `XflipCrcError`     | CRC mismatch; carries `expected` and `actual` |
+| `XflipEncodeError`  | Invalid `XflipFile` passed to `encode()`      |
+
+Treat any non-`XflipError` throw as a bug — please file an issue.
+
+## Format
+
+See the spec at `xflip-spec-v0.2.md` in the repository root. Highlights:
+
+- Magic bytes `XFLP` + version (`0x01 0x00` for v1.0).
+- PNG-style chunk framing: `TYPE` (4 bytes) + `LENGTH` (uint32 BE) +
+  `PAYLOAD` + `CRC32` (uint32 BE).
+- Critical chunks: `HEAD`, `FRNT`, `BACK`, `ENDX`.
+- Ancillary chunks (preserved verbatim): `META`, `tHmb`, `fLip`, `eDge`,
+  `fLyr`, `bLyr`, `hEfx`, plus any unknown lowercase-first tag.
+- CRC-32/ISO-HDLC (polynomial `0xEDB88320`, init `0xFFFFFFFF`, final XOR
+  `0xFFFFFFFF`).
+
+## Guarantees
+
+- **Round-trip identity.** `decode(encode(file))` deep-equals `file` for
+  every value in the v1.0 surface (verified by property tests).
+- **No silent corruption.** Critical-chunk CRC mismatches throw
+  `XflipCrcError`. Ancillary CRC is best-effort by default; pass
+  `decode(bytes, { strictAncillaryCrc: true })` to opt in.
+- **Bounded throws.** The decoder either succeeds or throws an
+  `XflipError`. Fuzz-tested at 50k+ iterations per second.
+
+## Browser & Node
+
+The package ships ESM only. It uses `Uint8Array` and `DataView`
+throughout — no `Buffer`, no `fs`. Bundle size budget is ≤ 10 KB gzip.
 
 ## License
 
