@@ -1,6 +1,7 @@
 import { encode } from '@xflip/core';
-import { useState } from 'react';
+import { Fragment, useState } from 'react';
 import { useStudio } from '../store/context.js';
+import { PreviewModal } from './PreviewModal.js';
 
 type ExportCodec = 'webp' | 'avif' | 'png';
 
@@ -9,6 +10,7 @@ export function TopBar() {
   const [codec, setCodec] = useState<ExportCodec>('webp');
   const [quality, setQuality] = useState(85);
   const [exporting, setExporting] = useState(false);
+  const [showPreview, setShowPreview] = useState(false);
 
   const exportCard = async () => {
     if (project.layers.length === 0) {
@@ -72,53 +74,63 @@ export function TopBar() {
   };
 
   return (
-    <header style={styles.bar}>
-      <span style={styles.logo}>xflip Studio</span>
-      <span style={styles.saveIndicator}>
-        {saveStatus === 'saving' && '💾 saving…'}
-        {saveStatus === 'saved' && '✓ saved'}
-        {saveStatus === 'error' && '⚠ save error'}
-      </span>
-      <div style={styles.settings}>
-        <label style={styles.settingLabel}>
-          Codec
-          <select
-            value={codec}
-            onChange={(e) => setCodec(e.target.value as ExportCodec)}
-            style={styles.select}
-          >
-            <option value="webp">WebP</option>
-            <option value="avif">AVIF</option>
-            <option value="png">PNG</option>
-          </select>
-        </label>
-        {codec !== 'png' && (
+    <Fragment>
+      <header style={styles.bar}>
+        <span style={styles.logo}>xflip Studio</span>
+        <span style={styles.saveIndicator}>
+          {saveStatus === 'saving' && '💾 saving…'}
+          {saveStatus === 'saved' && '✓ saved'}
+          {saveStatus === 'error' && '⚠ save error'}
+        </span>
+        <div style={styles.settings}>
           <label style={styles.settingLabel}>
-            Q {quality}
-            <input
-              type="range"
-              min={10}
-              max={100}
-              value={quality}
-              onChange={(e) => setQuality(Number(e.target.value))}
-              style={styles.qualitySlider}
-            />
+            Codec
+            <select
+              value={codec}
+              onChange={(e) => setCodec(e.target.value as ExportCodec)}
+              style={styles.select}
+            >
+              <option value="webp">WebP</option>
+              <option value="avif">AVIF</option>
+              <option value="png">PNG</option>
+            </select>
           </label>
-        )}
-      </div>
-      <div style={styles.actions}>
-        <button type="button" style={styles.btn} onClick={exportCard} disabled={exporting}>
-          {exporting ? 'Exporting…' : 'Export .xflip'}
-        </button>
-        <button
-          type="button"
-          style={{ ...styles.btn, ...styles.btnDanger }}
-          onClick={() => dispatch({ type: 'RESET' })}
-        >
-          Reset
-        </button>
-      </div>
-    </header>
+          {codec !== 'png' && (
+            <label style={styles.settingLabel}>
+              Q {quality}
+              <input
+                type="range"
+                min={10}
+                max={100}
+                value={quality}
+                onChange={(e) => setQuality(Number(e.target.value))}
+                style={styles.qualitySlider}
+              />
+            </label>
+          )}
+        </div>
+        <div style={styles.actions}>
+          <button
+            type="button"
+            style={{ ...styles.btn, ...styles.btnPreview }}
+            onClick={() => setShowPreview(true)}
+          >
+            Preview
+          </button>
+          <button type="button" style={styles.btn} onClick={exportCard} disabled={exporting}>
+            {exporting ? 'Exporting…' : 'Export .xflip'}
+          </button>
+          <button
+            type="button"
+            style={{ ...styles.btn, ...styles.btnDanger }}
+            onClick={() => dispatch({ type: 'RESET' })}
+          >
+            Reset
+          </button>
+        </div>
+      </header>
+      {showPreview && <PreviewModal onClose={() => setShowPreview(false)} />}
+    </Fragment>
   );
 }
 
@@ -227,4 +239,5 @@ const styles = {
     fontWeight: 600,
   },
   btnDanger: { background: '#f38ba8' },
+  btnPreview: { background: '#a6e3a1', color: '#1e1e2e' },
 } as const;
