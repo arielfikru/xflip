@@ -33,3 +33,4 @@ ADRs are immutable once accepted. To change a decision:
 | - | ----- | ------ |
 | [0001](./0001-tech-stack.md) | Tech Stack Selection | Accepted |
 | [0002](./0002-crc32-and-binary-parsing.md) | CRC32 and Binary Parsing Decisions | Accepted |
+| [0003](./0003-cli-argument-style.md) | CLI Argument Style and Dependency Posture | Accepted |

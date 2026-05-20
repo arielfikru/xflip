@@ -1,10 +1,12 @@
 # @xflip/cli
 
 Command-line tool for the [xflip](https://github.com/arielfikru/xflip) image
-format. Create, inspect, validate, and extract `.xflip` files from Node.
+format. Create, inspect, validate, extract, and re-layer `.xflip` files
+from Node.
 
-> Status: **work in progress.** P4.1–P4.2 ship `inspect` and `validate`.
-> `create`, `extract`, and `layers` follow in subsequent P4 tasks.
+> Status: P4.1–P4.6 complete. Five subcommands shipped:
+> `inspect`, `validate`, `extract`, `create`, `layers add`. CI runs a
+> cross-platform smoke matrix (ubuntu / macOS / windows).
 
 ## Install
 
@@ -14,7 +16,7 @@ npm install --global @xflip/cli
 npm install --save-dev @xflip/cli
 ```
 
-Requires Node 20+.
+Requires Node 20+. Zero runtime dependencies beyond `@xflip/core`.
 
 ## Usage
 
@@ -23,6 +25,14 @@ xflip <command> [options]
 ```
 
 Run `xflip help` or `xflip <command> --help` for details.
+
+### Exit codes
+
+| Code | Meaning |
+| ---- | ------- |
+| `0`  | Success |
+| `1`  | Runtime error (invalid input file, I/O failure, refused overwrite) |
+| `2`  | Usage error (missing/unknown flag, bad value, unknown subcommand) |
 
 ### `xflip inspect <file>`
 
@@ -56,8 +66,7 @@ Options:
 Run the full decoder on an `.xflip` file. Checks signature, every CRC,
 chunk order, mandatory chunks, HEAD payload shape, and known ancillary
 parse contracts. Prints a one-line `OK` report on success, or a
-multi-line `FAIL` report (with error class + message) on failure. Exit 0
-valid, 1 invalid.
+multi-line `FAIL` report (with error class + message) on failure.
 
 ```sh
 xflip validate card.xflip
@@ -73,16 +82,126 @@ Options:
 - `--strict-ancillary-crc` — treat ancillary CRC mismatches as fatal.
 - `-h`, `--help` — show command help.
 
+### `xflip extract <file> --to <dir>`
+
+Decode an `.xflip` file and write `front.<ext>`, `back.<ext>`, and (if
+present) `meta.json` into `<dir>`. Extensions follow the HEAD image-
+format code (`raw` / `custom` → `.bin`). The target directory is created
+if missing. Refuses to overwrite existing files unless `--force` is
+passed.
+
+```sh
+xflip extract card.xflip --to ./out
+```
+
+Options:
+
+- `--to <dir>` — target directory (required).
+- `--force` — overwrite existing output files.
+- `--strict-ancillary-crc` — treat ancillary CRC mismatches as fatal.
+
+### `xflip create --front <a> --back <b> --output <o> --width <W> --height <H>`
+
+Assemble an `.xflip` v1.0 file from two image inputs. Image formats are
+inferred from each input's filename extension; use `--front-format` /
+`--back-format` to override.
+
+```sh
+xflip create \
+  --front front.png --back back.jpg \
+  --width 512 --height 720 \
+  --flip-axis horizontal \
+  --meta meta.json \
+  --output card.xflip
+```
+
+Options:
+
+- `--front <path>`, `--back <path>` — source image bytes (required).
+- `--output <path>`, `--width <N>`, `--height <N>` — required.
+- `--front-format <fmt>`, `--back-format <fmt>` — override inference.
+- `--flip-axis <horizontal|vertical|diagonal>` — default `horizontal`.
+- `--default-back`, `--no-flip-anim` — HEAD flag bits.
+- `--meta <path>` — embed META chunk; validates UTF-8 JSON first.
+- `--force` — overwrite an existing `--output`.
+
+Supported formats: `png`, `jpeg` (`.jpg`/`.jpeg`), `webp`, `avif`, `jxl`,
+`raw` (`.bin`/`.raw`).
+
+### `xflip layers add <file> --face <front|back> --image <path> --effect-type <name> --output <path>`
+
+Insert a new layer into the file's `fLyr` (front) or `bLyr` (back) chunk,
+creating the chunk when absent. A v1.0 file with no layered chunks is
+promoted to v1.1 on first layer.
+
+```sh
+xflip layers add card.xflip \
+  --face front \
+  --image holo.png \
+  --effect-type holographic \
+  --blend-mode overlay \
+  --opacity 220 \
+  --response holo.json \
+  --output card-holo.xflip
+```
+
+Options:
+
+- `--face <front|back>` — which chunk to grow (required).
+- `--image <path>`, `--effect-type <name>`, `--output <path>` — required.
+- `--format <fmt>` — override format inference.
+- `--blend-mode <name>` — `normal` (default), `multiply`, `screen`,
+  `overlay`, `add`, `color_dodge`, `color_burn`, `soft_light`,
+  `hard_light`, `difference`, `luminosity`, `custom`.
+- `--layer-id <0-255>` — explicit ID (default: next unused).
+- `--opacity <0-255>` — default 255.
+- `--z-order <0-255>` — default `max(existing) + 1`, capped at 255.
+- `--response <path>` — per-layer response parameters (UTF-8 JSON
+  object).
+- `--force` — overwrite `--output`, including writing back to the
+  input path in place.
+- `--strict-ancillary-crc` — fatal on ancillary CRC mismatch.
+
 ## Programmatic use
 
-`@xflip/cli` also exports its command logic as functions for embedding:
+Each subcommand's pure logic is exported for embedding:
 
 ```ts
-import { readFile } from 'node:fs/promises';
-import { inspect } from '@xflip/cli';
+import { readFile, writeFile } from 'node:fs/promises';
+import {
+  addLayer,
+  buildFile,
+  encodeWithLayer,
+  extract,
+  inspect,
+  validate,
+} from '@xflip/cli';
+import { decode } from '@xflip/core';
 
-const summary = inspect(await readFile('card.xflip'));
-console.log(summary.chunks);
+const bytes = await readFile('card.xflip');
+
+inspect(bytes);
+validate(bytes);
+const plan = extract(bytes);
+await writeFile(`out/${plan.front.filename}`, plan.front.bytes);
+
+const fresh = buildFile({
+  front: await readFile('front.png'),
+  back: await readFile('back.jpg'),
+  frontFormat: 'png',
+  backFormat: 'jpeg',
+  width: 512,
+  height: 720,
+});
+
+const updated = addLayer(decode(fresh), {
+  face: 'front',
+  image: await readFile('holo.png'),
+  format: 'png',
+  blendMode: 'overlay',
+  effectType: 'holographic',
+});
+await writeFile('card-holo.xflip', encodeWithLayer(updated));
 ```
 
 ## License
