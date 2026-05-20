@@ -43,7 +43,45 @@ export type ChunkType =
   | 'eDge'
   | 'fLyr'
   | 'bLyr'
-  | 'hEfx';
+  | 'hEfx'
+  | 'pOse';
+
+/**
+ * Affine transform at a single pose grid point.
+ * All values are deltas relative to the layer's base transform.
+ */
+export interface PoseKeyframe {
+  /** X translation offset in pixels. */
+  tx: number;
+  /** Y translation offset in pixels. */
+  ty: number;
+  /** Rotation in radians around layer center. */
+  rotationRad: number;
+  /** Uniform scale multiplier (1.0 = no change). */
+  scale: number;
+  /** Opacity multiplier in [0, 1] (1.0 = no change). */
+  opacity: number;
+}
+
+/**
+ * Valid grid sizes for a {@link XflipPose}.
+ * 3×3 = 9 keyframes (standard); 5×5 = 25 keyframes (reserved for v1.3).
+ */
+export type PoseGridSize = 3 | 5;
+
+/**
+ * Pose rig for a single layer: a grid of {@link PoseKeyframe} values
+ * sampled by viewer tilt angle via bilinear interpolation.
+ *
+ * Grid axes are normalized tiltX ∈ [-1, +1] (left→right) and
+ * tiltY ∈ [-1, +1] (top→bottom). Keyframes are stored row-major,
+ * tiltY ascending (row 0 = tiltY=-1, last row = tiltY=+1).
+ */
+export interface XflipPose {
+  gridSize: PoseGridSize;
+  /** row-major; length must equal gridSize × gridSize. */
+  keyframes: readonly PoseKeyframe[];
+}
 
 /**
  * Decoded HEAD chunk per spec v0.2 §4.1.
@@ -141,6 +179,8 @@ export interface XflipLayer {
   response: XflipLayerResponse;
   /** Encoded image data (raw bytes of a PNG/JPEG/... file). */
   imageData: Uint8Array;
+  /** Optional pose rig from a paired `pOse` chunk (xflip v1.2+). */
+  pose?: XflipPose;
 }
 
 /**

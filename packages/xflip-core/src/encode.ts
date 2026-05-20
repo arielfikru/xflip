@@ -10,9 +10,16 @@ import { BytesWriter } from './bytes.js';
 import { writeChunk, writeSignature } from './chunks.js';
 import { XflipEncodeError } from './errors.js';
 import { serializeHefx, serializeLayerChunk } from './layers.js';
-import { FLIP_AXIS_CODES, IMAGE_FORMAT_CODES, type XflipFile, type XflipHead } from './types.js';
+import { serializePoseChunk } from './pose.js';
+import {
+  FLIP_AXIS_CODES,
+  IMAGE_FORMAT_CODES,
+  type XflipFile,
+  type XflipHead,
+  type XflipLayer,
+} from './types.js';
 
-const LAYERED_KEYS = new Set(['fLyr', 'bLyr', 'hEfx']);
+const LAYERED_KEYS = new Set(['fLyr', 'bLyr', 'hEfx', 'pOse']);
 
 const MAX_DIMENSION = 0xffffffff;
 
@@ -52,9 +59,15 @@ export function encode(file: XflipFile): Uint8Array {
     }
   }
   writeChunk(writer, 'FRNT', file.front);
-  if (fLyrPayload) writeChunk(writer, 'fLyr', fLyrPayload);
+  if (fLyrPayload) {
+    writeChunk(writer, 'fLyr', fLyrPayload);
+    if (file.frontLayers) emitPoseChunks(writer, 'front', file.frontLayers.layers);
+  }
   writeChunk(writer, 'BACK', file.back);
-  if (bLyrPayload) writeChunk(writer, 'bLyr', bLyrPayload);
+  if (bLyrPayload) {
+    writeChunk(writer, 'bLyr', bLyrPayload);
+    if (file.backLayers) emitPoseChunks(writer, 'back', file.backLayers.layers);
+  }
   if (hEfxPayload) writeChunk(writer, 'hEfx', hEfxPayload);
   writeChunk(writer, 'ENDX', new Uint8Array());
   return writer.toBytes();
@@ -109,6 +122,18 @@ const encodeHead = (head: XflipHead): Uint8Array => {
   dv.setUint8(10, axisCode);
   dv.setUint8(11, head.flags);
   return out;
+};
+
+const emitPoseChunks = (
+  writer: BytesWriter,
+  face: 'front' | 'back',
+  layers: readonly XflipLayer[],
+): void => {
+  for (const layer of layers) {
+    if (layer.pose) {
+      writeChunk(writer, 'pOse', serializePoseChunk(face, layer.layerId, layer.pose));
+    }
+  }
 };
 
 const estimateAncillary = (map: ReadonlyMap<string, Uint8Array> | undefined): number => {
