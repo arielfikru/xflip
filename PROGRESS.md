@@ -5,8 +5,8 @@
 
 **Last updated:** 2026-05-20
 **Current phase:** P5 (xflip-react)
-**Current task:** P5.1 (`@xflip/react` package skeleton)
-**Status:** P4 complete. All seven CLI tasks shipped (inspect, validate, extract, create, layers add, cross-platform smoke matrix, README + ADR 0003). Suite at 369 tests; biome clean; CLI bundle stays at the size budget. Phase 5 begins: build a React wrapper around `<xflip-card>` so consumers get a typed `<XflipCard src=...>` component without web-component plumbing.
+**Current task:** P5.2 (typed `<XflipCard>` React component wrapping `<xflip-card>`)
+**Status:** P5.1 done — `@xflip/react` scaffold shipped (tsup ESM, peer-dep React 18+, workspace dep on `@xflip/viewer`, per-package typecheck + vitest). Only export is a `VERSION` sentinel + smoke test so the package is importable before components land. Suite at 370 tests; biome clean; react bundle is 127 B until components arrive. Next: P5.2 builds the actual `<XflipCard>` wrapper with `src`/event/ref props and a JSX intrinsic-element augmentation for `xflip-card`.
 
 **P4.6 status (history):** CI `cli-smoke` job builds the CLI bin and drives `scripts/cli-smoke.mjs` end-to-end on ubuntu / macOS / windows (help, create, inspect, validate, extract, layers add, validate of layered output, META round-trip, unknown-command exit-2). Local: 9/9 checks pass.
 
@@ -18,10 +18,13 @@
 
 ## Quick Resume Pointer
 
-**Next Task:** `P5.1` — Scaffold `packages/xflip-react`: tsup ESM library
-config, peer-dep on React 18+, workspace dep on `@xflip/viewer`,
-per-package typecheck + vitest. No component exports yet — just the
-skeleton that other P5 tasks build on.
+**Next Task:** `P5.2` — Implement the typed `<XflipCard>` React component
+in `packages/xflip-react`: forwards `src`, attribute props, and ref to
+the underlying `<xflip-card>` element; subscribes to `xflip-load` /
+`xflip-error` events via props (`onLoad`, `onError`); auto-imports the
+viewer's `define` side-effect once on first mount so consumers don't
+have to. Add JSX intrinsic-element augmentation for `xflip-card` so
+TypeScript users can also drop the raw tag with type safety.
 
 **Concrete next actions** for P1 (per AGENTS.md Phase 1 + PROGRESS Phase 1 breakdown):
 
@@ -85,7 +88,7 @@ Mark each phase done only when its AGENTS.md DoD is fully met.
 | P2    | xflip-core v1.1   | ✅ DONE   | 2026-05-20 | 2026-05-20 | 229 tests; layered chunks lifted to typed fields |
 | P3    | xflip-viewer      | ✅ DONE   | 2026-05-20 | 2026-05-20 | All 9 tasks shipped; Playwright matrix in CI; viewer 6.82 KB gzip |
 | P4    | xflip-cli         | ✅ DONE   | 2026-05-20 | 2026-05-20 | 5 subcommands; CI smoke matrix; README + ADR 0003 |
-| P5    | xflip-react       | ☐ TODO   | -         | -         | Build React wrapper around `<xflip-card>` |
+| P5    | xflip-react       | 🚧 IN PROGRESS | 2026-05-20 | -         | P5.1 scaffold landed (tsup, peer-dep React 18+) |
 | P6    | playground        | ☐ TODO   | -         | -         | |
 | P7    | docs              | ☐ TODO   | -         | -         | |
 | P8    | launch            | ☐ TODO   | -         | -         | Requires user OK |
@@ -102,6 +105,7 @@ Append rows as tasks complete. Format:
 
 | Date       | Task   | Description                         | Commit   | Notes |
 | ---------- | ------ | ----------------------------------- | -------- | ----- |
+| 2026-05-20 | P5.1   | `@xflip/react` package skeleton (tsup ESM, peer-dep react ^18, workspace dep on `@xflip/viewer`, per-package typecheck + vitest); only export is `VERSION` sentinel | 0f6802e | 1 smoke test (370 total); react bundle 127 B until components land |
 | 2026-05-20 | P4.7   | `@xflip/cli` README documents all 5 subcommands + exit codes + programmatic API; ADR 0003 locks down argument style (parseArgs, flag-only, --output gates) | 2d87a51 | docs only; no test delta |
 | 2026-05-20 | P4.6   | CI `cli-smoke` matrix (ubuntu / macOS / windows) — builds the CLI bin, runs `scripts/cli-smoke.mjs` end-to-end against the real `xflip` for help/create/inspect/validate/extract/layers-add/validate-layered + META round-trip + unknown-command exit-2 | 3e8d5b0 | local smoke pass 9/9; biome ignores `.github/` and `scripts/` so no lint config change |
 | 2026-05-20 | P4.5   | `xflip layers add` inserts a layer into fLyr/bLyr; creates chunk if absent; promotes v1.0 → v1.1; defaults for layer_id/z_order/opacity; optional --response JSON file; --force gates overwrites incl. in-place | be9d9b4 | +33 tests (369 total); programmatic `addLayer()` + `encodeWithLayer()` + `isBlendMode` re-exported |
@@ -241,9 +245,26 @@ works; Playwright suites pass on three engines.
 helpful error messages on invalid input; `--help` output for every
 command; tested on macOS, Linux, Windows.
 
-## Phase 5+ Task Breakdown
+## Phase 5 (xflip-react) Task Breakdown
 
-To be expanded when P4 nears completion. Reference AGENTS.md Section 5 for
+| Task ID | Description                                                       | Status |
+| ------- | ----------------------------------------------------------------- | ------ |
+| P5.1    | Package skeleton (tsup ESM, peer-dep React 18+, vitest)           | ✅      |
+| P5.2    | `<XflipCard>` typed wrapper (src, onLoad/onError, ref, JSX augment) | ☐      |
+| P5.3    | `useXflip(src)` hook returning decoded `XflipFile` (or error)     | ☐      |
+| P5.4    | SSR safety: no `document` access at module top-level; client-only `define` import gated by `useEffect` | ☐      |
+| P5.5    | Tests (happy-dom + React Testing Library): mount, prop forwarding, event callbacks, ref | ☐      |
+| P5.6    | Package README + usage examples                                   | ☐      |
+| P5.7    | Size budget entry for `@xflip/react` in root `package.json`       | ☐      |
+
+**P5 DoD:** Per AGENTS.md §5 Phase 5 — `<XflipCard>` renders xflip files
+in a React app; props are fully typed; events flow through React handlers;
+SSR-safe; bundle stays within the size budget (target ≤ 5 KB gzip on top
+of `@xflip/viewer`).
+
+## Phase 6+ Task Breakdown
+
+To be expanded when P5 nears completion. Reference AGENTS.md Section 5 for
 authoritative DoD.
 
 ---
