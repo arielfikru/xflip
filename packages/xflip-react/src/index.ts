@@ -10,6 +10,7 @@ export type {
   XflipLoadEventDetail,
 } from '@xflip/viewer';
 export type { XflipCardIntrinsicAttributes } from './jsx-intrinsic.js';
+export { type UseXflipResult, useXflip, type XflipStatus } from './use-xflip.js';
 export { XflipCard, type XflipCardProps } from './xflip-card.js';
 
 export const VERSION = '0.0.0';

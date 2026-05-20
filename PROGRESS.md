@@ -5,8 +5,8 @@
 
 **Last updated:** 2026-05-20
 **Current phase:** P5 (xflip-react)
-**Current task:** P5.3 (`useXflip(src)` hook)
-**Status:** P5.1 + P5.2 done. `@xflip/react` ships a typed `<XflipCard>` wrapper that forwards `src`/`tiltMax`/HTML attrs/ref to the underlying `<xflip-card>`, surfaces the viewer's `xflip-load`/`xflip-error` events as `onLoad`/`onError` props, and registers the custom element on first mount via an idempotent `defineXflipCard()`. JSX intrinsic-element augmentation lets consumers also drop the raw `<xflip-card>` tag with type safety. Suite at 377 tests (8 new); biome clean; bundle 2.13 KB. Next: P5.3 ships a `useXflip(src)` hook that fetches + decodes via `@xflip/core` and returns `{ file, error, status }`.
+**Current task:** P5.4 (SSR safety pass)
+**Status:** P5.1 + P5.2 + P5.3 done. `useXflip(src)` hook lands in `@xflip/react`: fetches `src`, decodes via `@xflip/core`, returns `{ file, error, status: 'idle' | 'loading' | 'success' | 'error' }`. Uses `AbortController` to cancel in-flight requests on `src` change or unmount, and swallows `AbortError` so it never surfaces as `status="error"`. Non-`Error` rejections wrapped via `new Error(String(reason))`. Suite at 384 tests (7 new); biome clean. Next: P5.4 confirms SSR safety (no `document` access at module top-level; client-only `define` import gated by `useEffect`).
 
 **P4.6 status (history):** CI `cli-smoke` job builds the CLI bin and drives `scripts/cli-smoke.mjs` end-to-end on ubuntu / macOS / windows (help, create, inspect, validate, extract, layers add, validate of layered output, META round-trip, unknown-command exit-2). Local: 9/9 checks pass.
 
@@ -18,12 +18,12 @@
 
 ## Quick Resume Pointer
 
-**Next Task:** `P5.3` — Implement a `useXflip(src)` React hook in
-`packages/xflip-react` that fetches `src`, decodes the bytes via
-`@xflip/core`, and returns `{ file, error, status: 'idle' | 'loading'
-| 'success' | 'error' }`. Uses an `AbortController` to cancel in-flight
-loads when `src` changes or the consumer unmounts. SSR-safe (no
-`window`/`fetch` access at module top-level).
+**Next Task:** `P5.4` — SSR safety pass for `@xflip/react`. Audit
+`packages/xflip-react/src/*` to confirm no `document` / `window` /
+`customElements` access happens at module top-level; the `defineXflipCard`
+call must remain gated by `useEffect` (already is). Add a Node-runtime
+import-side-effects test that imports `@xflip/react` under
+`environment: 'node'` and asserts no globals are touched.
 
 **Concrete next actions** for P1 (per AGENTS.md Phase 1 + PROGRESS Phase 1 breakdown):
 
@@ -104,6 +104,7 @@ Append rows as tasks complete. Format:
 
 | Date       | Task   | Description                         | Commit   | Notes |
 | ---------- | ------ | ----------------------------------- | -------- | ----- |
+| 2026-05-20 | P5.3   | `useXflip(src)` React hook: fetch + decode via `@xflip/core`; returns `{ file, error, status }` with `idle`/`loading`/`success`/`error` states; AbortController cancels in-flight on `src` change + unmount; AbortError swallowed; non-Error reasons wrapped | (this)   | +7 tests (384 total); test harness uses React `act` with `IS_REACT_ACT_ENVIRONMENT=true` |
 | 2026-05-20 | P5.2   | Typed `<XflipCard>` React wrapper (forwards src/tiltMax/HTML attrs/ref; onLoad/onError event subscriptions; idempotent custom-element register on first mount; JSX intrinsic-element augmentation for `xflip-card`) | beece15 | +7 tests (377 total); react bundle 2.13 KB; vitest include widened to `*.test.tsx`; tests use happy-dom + `flushSync` |
 | 2026-05-20 | P5.1   | `@xflip/react` package skeleton (tsup ESM, peer-dep react ^18, workspace dep on `@xflip/viewer`, per-package typecheck + vitest); only export is `VERSION` sentinel | 0f6802e | 1 smoke test (370 total); react bundle 127 B until components land |
 | 2026-05-20 | P4.7   | `@xflip/cli` README documents all 5 subcommands + exit codes + programmatic API; ADR 0003 locks down argument style (parseArgs, flag-only, --output gates) | 2d87a51 | docs only; no test delta |
@@ -251,7 +252,7 @@ command; tested on macOS, Linux, Windows.
 | ------- | ----------------------------------------------------------------- | ------ |
 | P5.1    | Package skeleton (tsup ESM, peer-dep React 18+, vitest)           | ✅      |
 | P5.2    | `<XflipCard>` typed wrapper (src, onLoad/onError, ref, JSX augment) | ✅      |
-| P5.3    | `useXflip(src)` hook returning decoded `XflipFile` (or error)     | ☐      |
+| P5.3    | `useXflip(src)` hook returning decoded `XflipFile` (or error)     | ✅      |
 | P5.4    | SSR safety: no `document` access at module top-level; client-only `define` import gated by `useEffect` | ☐      |
 | P5.5    | Tests (happy-dom + React Testing Library): mount, prop forwarding, event callbacks, ref | ☐      |
 | P5.6    | Package README + usage examples                                   | ☐      |
