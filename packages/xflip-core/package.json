@@ -49,6 +49,7 @@
     "test": "vitest run --passWithNoTests",
     "test:watch": "vitest",
     "test:coverage": "vitest run --coverage --passWithNoTests",
+    "fuzz": "tsx scripts/fuzz.ts",
     "clean": "rm -rf dist coverage *.tsbuildinfo"
   },
   "publishConfig": {
@@ -56,6 +57,7 @@
   },
   "devDependencies": {
     "@fast-check/vitest": "^0.1.6",
-    "fast-check": "^4.8.0"
+    "fast-check": "^4.8.0",
+    "tsx": "^4.22.2"
   }
 }
