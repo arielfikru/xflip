@@ -108,6 +108,46 @@ jobs:
       - name: Size
         run: pnpm size
 
+  cli-smoke:
+    name: cli smoke (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 15
+    needs: build-and-test
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 11
+          run_install: false
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Typecheck
+        run: pnpm typecheck
+
+      - name: Test (CLI package)
+        run: pnpm --filter @xflip/cli test
+
+      - name: Build CLI
+        run: pnpm --filter @xflip/cli build
+
+      - name: Smoke run subcommands
+        run: node scripts/cli-smoke.mjs
+
   e2e:
     name: e2e (chromium / firefox / webkit)
     runs-on: ubuntu-latest
