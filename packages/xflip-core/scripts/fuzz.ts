@@ -25,8 +25,8 @@ import { decode, encode, XflipError } from '../src/index.js';
 const FORMATS: readonly ImageFormat[] = ['raw', 'png', 'jpeg', 'webp', 'avif', 'jxl', 'custom'];
 const AXES: readonly FlipAxis[] = ['horizontal', 'vertical', 'diagonal'];
 
-const durationMs = Number.parseInt(process.env['XFLIP_FUZZ_DURATION_MS'] ?? '60000', 10);
-const seed = Number.parseInt(process.env['XFLIP_FUZZ_SEED'] ?? `${Date.now()}`, 10);
+const durationMs = Number.parseInt(process.env.XFLIP_FUZZ_DURATION_MS ?? '60000', 10);
+const seed = Number.parseInt(process.env.XFLIP_FUZZ_SEED ?? `${Date.now()}`, 10);
 
 // Tiny seeded LCG. Deterministic so a failing seed can be re-run.
 let rngState = seed >>> 0;

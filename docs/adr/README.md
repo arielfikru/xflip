@@ -32,3 +32,4 @@ ADRs are immutable once accepted. To change a decision:
 | # | Title | Status |
 | - | ----- | ------ |
 | [0001](./0001-tech-stack.md) | Tech Stack Selection | Accepted |
+| [0002](./0002-crc32-and-binary-parsing.md) | CRC32 and Binary Parsing Decisions | Accepted |
