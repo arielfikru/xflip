@@ -1,11 +1,5 @@
 import type { XflipFile } from '@xflip/core';
-import {
-  defineXflipCard,
-  XFLIP_CARD_TAG,
-  type XflipCardElement,
-  type XflipErrorEventDetail,
-  type XflipLoadEventDetail,
-} from '@xflip/viewer';
+import type { XflipCardElement, XflipErrorEventDetail, XflipLoadEventDetail } from '@xflip/viewer';
 import {
   type CSSProperties,
   type ForwardedRef,
@@ -16,6 +10,12 @@ import {
   useEffect,
   useRef,
 } from 'react';
+
+// Inlined to keep the module SSR-safe: importing `@xflip/viewer` at module
+// scope evaluates a `class extends HTMLElement` declaration, which throws
+// `HTMLElement is not defined` under Node. The actual registration uses
+// the same tag via a dynamic import inside `ensureDefined`.
+const XFLIP_CARD_TAG = 'xflip-card';
 
 /**
  * Props for the {@link XflipCard} component.
@@ -49,13 +49,16 @@ export interface XflipCardProps {
   'aria-label'?: string | undefined;
 }
 
-let defined = false;
-function ensureDefined(): void {
-  if (defined) return;
-  // `defineXflipCard` is itself idempotent; the local flag avoids the
-  // function call on every mount.
-  defineXflipCard();
-  defined = true;
+let definePromise: Promise<void> | null = null;
+function ensureDefined(): Promise<void> {
+  if (definePromise) return definePromise;
+  // Dynamic import keeps `@xflip/viewer` (which evaluates a
+  // `class extends HTMLElement` at module load) out of the server bundle.
+  // The bundler still chunks it for the client.
+  definePromise = import('@xflip/viewer').then(({ defineXflipCard }) => {
+    defineXflipCard();
+  });
+  return definePromise;
 }
 
 function assignRef<T>(ref: ForwardedRef<T>, value: T | null): void {
@@ -98,7 +101,7 @@ export const XflipCard = forwardRef<XflipCardElement, XflipCardProps>(
     );
 
     useEffect(() => {
-      ensureDefined();
+      void ensureDefined();
     }, []);
 
     useEffect(() => {

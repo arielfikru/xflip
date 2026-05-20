@@ -5,8 +5,8 @@
 
 **Last updated:** 2026-05-20
 **Current phase:** P5 (xflip-react)
-**Current task:** P5.4 (SSR safety pass)
-**Status:** P5.1 + P5.2 + P5.3 done. `useXflip(src)` hook lands in `@xflip/react`: fetches `src`, decodes via `@xflip/core`, returns `{ file, error, status: 'idle' | 'loading' | 'success' | 'error' }`. Uses `AbortController` to cancel in-flight requests on `src` change or unmount, and swallows `AbortError` so it never surfaces as `status="error"`. Non-`Error` rejections wrapped via `new Error(String(reason))`. Suite at 384 tests (7 new); biome clean. Next: P5.4 confirms SSR safety (no `document` access at module top-level; client-only `define` import gated by `useEffect`).
+**Current task:** P5.5 (Tests + Testing Library coverage)
+**Status:** P5.4 done. Verified `@xflip/react` imports cleanly under Node with no `HTMLElement`/`document`/`customElements` defined. Root cause for the previous SSR break was `@xflip/viewer` evaluating `class XflipCardElement extends HTMLElement` at module load; react's `XflipCard` now type-only-imports `@xflip/viewer` and lazy-loads `defineXflipCard` via `await import('@xflip/viewer')` inside the mount effect. `XFLIP_CARD_TAG` inlined as the literal `'xflip-card'` to keep the JSX tag synchronous. Suite at 386 tests (+2 SSR); `node -e "import('./dist/index.js')"` returns `OK keys: VERSION,XflipCard,useXflip`. Next: P5.5 widens unit coverage (event payload assertions, ref attach/detach, src toggling under <XflipCard> wrapper).
 
 **P4.6 status (history):** CI `cli-smoke` job builds the CLI bin and drives `scripts/cli-smoke.mjs` end-to-end on ubuntu / macOS / windows (help, create, inspect, validate, extract, layers add, validate of layered output, META round-trip, unknown-command exit-2). Local: 9/9 checks pass.
 
@@ -18,12 +18,13 @@
 
 ## Quick Resume Pointer
 
-**Next Task:** `P5.4` — SSR safety pass for `@xflip/react`. Audit
-`packages/xflip-react/src/*` to confirm no `document` / `window` /
-`customElements` access happens at module top-level; the `defineXflipCard`
-call must remain gated by `useEffect` (already is). Add a Node-runtime
-import-side-effects test that imports `@xflip/react` under
-`environment: 'node'` and asserts no globals are touched.
+**Next Task:** `P5.5` — Strengthen unit-test coverage for
+`packages/xflip-react`. Add cases for: (a) attaching/detaching the same
+ref across rerenders, (b) changing `src` while a previous fetch is in
+flight, (c) passing through `className`/`style`/`hidden`/`aria-label`,
+(d) toggling `tiltMax` between numeric and `undefined`. Confirm React
+Testing Library is not needed (current manual `createRoot` + `act`
+harness suffices) — if it is, justify the dev-dep before adding.
 
 **Concrete next actions** for P1 (per AGENTS.md Phase 1 + PROGRESS Phase 1 breakdown):
 
@@ -104,6 +105,7 @@ Append rows as tasks complete. Format:
 
 | Date       | Task   | Description                         | Commit   | Notes |
 | ---------- | ------ | ----------------------------------- | -------- | ----- |
+| 2026-05-20 | P5.4   | SSR safety for `@xflip/react`: drop runtime imports from `@xflip/viewer`, inline `XFLIP_CARD_TAG`, lazy-load `defineXflipCard` via dynamic `import('@xflip/viewer')` inside the mount effect | (this)   | +2 SSR tests (386 total); Node smoke `import('./dist/index.js')` returns 3 keys |
 | 2026-05-20 | P5.3   | `useXflip(src)` React hook: fetch + decode via `@xflip/core`; returns `{ file, error, status }` with `idle`/`loading`/`success`/`error` states; AbortController cancels in-flight on `src` change + unmount; AbortError swallowed; non-Error reasons wrapped | b30fe4c  | +7 tests (384 total); test harness uses React `act` with `IS_REACT_ACT_ENVIRONMENT=true` |
 | 2026-05-20 | P5.2   | Typed `<XflipCard>` React wrapper (forwards src/tiltMax/HTML attrs/ref; onLoad/onError event subscriptions; idempotent custom-element register on first mount; JSX intrinsic-element augmentation for `xflip-card`) | beece15 | +7 tests (377 total); react bundle 2.13 KB; vitest include widened to `*.test.tsx`; tests use happy-dom + `flushSync` |
 | 2026-05-20 | P5.1   | `@xflip/react` package skeleton (tsup ESM, peer-dep react ^18, workspace dep on `@xflip/viewer`, per-package typecheck + vitest); only export is `VERSION` sentinel | 0f6802e | 1 smoke test (370 total); react bundle 127 B until components land |
@@ -253,7 +255,7 @@ command; tested on macOS, Linux, Windows.
 | P5.1    | Package skeleton (tsup ESM, peer-dep React 18+, vitest)           | ✅      |
 | P5.2    | `<XflipCard>` typed wrapper (src, onLoad/onError, ref, JSX augment) | ✅      |
 | P5.3    | `useXflip(src)` hook returning decoded `XflipFile` (or error)     | ✅      |
-| P5.4    | SSR safety: no `document` access at module top-level; client-only `define` import gated by `useEffect` | ☐      |
+| P5.4    | SSR safety: no `document` access at module top-level; client-only `define` import gated by `useEffect` | ✅      |
 | P5.5    | Tests (happy-dom + React Testing Library): mount, prop forwarding, event callbacks, ref | ☐      |
 | P5.6    | Package README + usage examples                                   | ☐      |
 | P5.7    | Size budget entry for `@xflip/react` in root `package.json`       | ☐      |

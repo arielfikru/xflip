@@ -34,6 +34,14 @@ function mount(element: ReactElement): void {
   });
 }
 
+async function waitForCustomElement(name: string, timeoutMs = 500): Promise<void> {
+  const start = Date.now();
+  while (!customElements.get(name)) {
+    if (Date.now() - start > timeoutMs) return;
+    await new Promise((r) => setTimeout(r, 5));
+  }
+}
+
 describe('<XflipCard>', () => {
   it('renders an <xflip-card> element and forwards src', () => {
     mount(<XflipCard src="/example.xflip" />);
@@ -42,8 +50,9 @@ describe('<XflipCard>', () => {
     expect(el?.getAttribute('src')).toBe('/example.xflip');
   });
 
-  it('registers the custom element on first mount', () => {
+  it('registers the custom element on first mount', async () => {
     mount(<XflipCard src="/a.xflip" />);
+    await waitForCustomElement('xflip-card');
     expect(customElements.get('xflip-card')).toBeDefined();
   });
 
