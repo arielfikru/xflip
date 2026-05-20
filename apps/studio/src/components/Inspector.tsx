@@ -3,19 +3,27 @@ import { useStudio } from '../store/context.js';
 import type { PoseKeyframe } from '../store/types.js';
 import { PoseGrid } from './PoseGrid.js';
 
+const RAD_TO_DEG = 180 / Math.PI;
+const DEG_TO_RAD = Math.PI / 180;
+
 export function Inspector() {
   const { project, dispatch } = useStudio();
   const layer = project.layers.find((l) => l.id === project.selectedLayerId);
 
+  const identity: PoseKeyframe = { tx: 0, ty: 0, rotationRad: 0, scale: 1, opacity: 1 };
   const activeKf: PoseKeyframe = layer
-    ? (layer.pose.keyframes[project.activePoseCell] ?? {
-        tx: 0,
-        ty: 0,
-        rotationRad: 0,
-        scale: 1,
-        opacity: 1,
-      })
-    : { tx: 0, ty: 0, rotationRad: 0, scale: 1, opacity: 1 };
+    ? (layer.pose.keyframes[project.activePoseCell] ?? identity)
+    : identity;
+
+  const setKf = (patch: Partial<PoseKeyframe>) => {
+    if (!layer) return;
+    dispatch({
+      type: 'SET_LAYER_POSE_CELL',
+      layerId: layer.id,
+      cellIndex: project.activePoseCell,
+      keyframe: { ...activeKf, ...patch },
+    });
+  };
 
   return (
     <aside style={styles.panel}>
@@ -46,23 +54,18 @@ export function Inspector() {
                 ))}
               </select>
             </Row>
-            <Row label="Opacity">
-              <input
-                type="range"
-                min={0}
-                max={255}
-                value={layer.opacity}
-                onChange={(e) =>
-                  dispatch({
-                    type: 'SET_LAYER_OPACITY',
-                    layerId: layer.id,
-                    opacity: Number(e.target.value),
-                  })
-                }
-                style={styles.range}
-              />
-              <span style={styles.val}>{Math.round((layer.opacity / 255) * 100)}%</span>
-            </Row>
+            <PoseSliderRow
+              label="Opacity"
+              min={0}
+              max={255}
+              step={1}
+              value={layer.opacity}
+              unit="%"
+              display={Math.round((layer.opacity / 255) * 100)}
+              onChange={(v) =>
+                dispatch({ type: 'SET_LAYER_OPACITY', layerId: layer.id, opacity: v })
+              }
+            />
           </Section>
 
           <Section label="Pose">
@@ -85,34 +88,113 @@ export function Inspector() {
                 <p style={styles.poseLabel}>Active cell (click to switch):</p>
                 <PoseGrid />
                 <div style={styles.kfControls}>
-                  <div style={styles.kfSliderRow}>
-                    <span style={styles.kfSliderLabel}>opacity</span>
-                    <input
-                      type="range"
-                      min={0}
-                      max={1}
-                      step={0.01}
-                      value={activeKf.opacity}
-                      onChange={(e) =>
-                        dispatch({
-                          type: 'SET_LAYER_POSE_CELL',
-                          layerId: layer.id,
-                          cellIndex: project.activePoseCell,
-                          keyframe: { ...activeKf, opacity: Number(e.target.value) },
-                        })
-                      }
-                      style={styles.range}
-                    />
-                    <span style={styles.val}>{Math.round(activeKf.opacity * 100)}%</span>
-                  </div>
+                  <PoseSliderRow
+                    label="tx"
+                    min={-500}
+                    max={500}
+                    step={1}
+                    value={activeKf.tx}
+                    unit="px"
+                    display={Math.round(activeKf.tx)}
+                    onChange={(v) => setKf({ tx: v })}
+                  />
+                  <PoseSliderRow
+                    label="ty"
+                    min={-500}
+                    max={500}
+                    step={1}
+                    value={activeKf.ty}
+                    unit="px"
+                    display={Math.round(activeKf.ty)}
+                    onChange={(v) => setKf({ ty: v })}
+                  />
+                  <PoseSliderRow
+                    label="rot"
+                    min={-180}
+                    max={180}
+                    step={1}
+                    value={Math.round(activeKf.rotationRad * RAD_TO_DEG)}
+                    unit="°"
+                    display={Math.round(activeKf.rotationRad * RAD_TO_DEG)}
+                    onChange={(v) => setKf({ rotationRad: v * DEG_TO_RAD })}
+                  />
+                  <PoseSliderRow
+                    label="scale"
+                    min={0.01}
+                    max={5}
+                    step={0.01}
+                    value={activeKf.scale}
+                    unit=""
+                    display={Number(activeKf.scale.toFixed(2))}
+                    onChange={(v) => setKf({ scale: v })}
+                  />
+                  <PoseSliderRow
+                    label="opacity"
+                    min={0}
+                    max={100}
+                    step={1}
+                    value={Math.round(activeKf.opacity * 100)}
+                    unit="%"
+                    display={Math.round(activeKf.opacity * 100)}
+                    onChange={(v) => setKf({ opacity: v / 100 })}
+                  />
                 </div>
-                <KeyframeInfo keyframe={activeKf} />
               </>
             )}
           </Section>
         </div>
       )}
     </aside>
+  );
+}
+
+interface PoseSliderRowProps {
+  label: string;
+  min: number;
+  max: number;
+  step: number;
+  value: number;
+  unit: string;
+  display: number;
+  onChange: (v: number) => void;
+}
+
+function PoseSliderRow({
+  label,
+  min,
+  max,
+  step,
+  value,
+  unit,
+  display,
+  onChange,
+}: PoseSliderRowProps) {
+  return (
+    <div style={styles.sliderRow}>
+      <span style={styles.sliderLabel}>{label}</span>
+      <input
+        type="range"
+        min={min}
+        max={max}
+        step={step}
+        value={value}
+        onChange={(e) => onChange(Number(e.target.value))}
+        style={styles.range}
+      />
+      <input
+        type="number"
+        min={min}
+        max={max}
+        step={step}
+        value={display}
+        onChange={(e) => {
+          const n = Number(e.target.value);
+          if (!Number.isNaN(n)) onChange(Math.min(max, Math.max(min, n)));
+        }}
+        style={styles.numberInput}
+      />
+      {unit && <span style={styles.unit}>{unit}</span>}
+    </div>
   );
 }
 
@@ -134,30 +216,6 @@ function Row({ label, children }: { label: string; children: React.ReactNode }) 
   );
 }
 
-function KeyframeInfo({ keyframe }: { keyframe: PoseKeyframe }) {
-  return (
-    <div style={styles.kfBox}>
-      <KfRow label="tx" value={keyframe.tx.toFixed(1)} unit="px" />
-      <KfRow label="ty" value={keyframe.ty.toFixed(1)} unit="px" />
-      <KfRow label="rot" value={(keyframe.rotationRad * (180 / Math.PI)).toFixed(1)} unit="°" />
-      <KfRow label="scale" value={keyframe.scale.toFixed(3)} />
-      <KfRow label="opacity" value={keyframe.opacity.toFixed(3)} />
-    </div>
-  );
-}
-
-function KfRow({ label, value, unit = '' }: { label: string; value: string; unit?: string }) {
-  return (
-    <div style={styles.kfRow}>
-      <span style={styles.kfLabel}>{label}</span>
-      <span style={styles.kfValue}>
-        {value}
-        {unit}
-      </span>
-    </div>
-  );
-}
-
 const BLEND_MODES = [
   'normal',
   'multiply',
@@ -169,12 +227,13 @@ const BLEND_MODES = [
   'hard-light',
   'difference',
   'luminosity',
+  'plus-lighter',
 ];
 
 const styles = {
   panel: {
-    width: 220,
-    minWidth: 180,
+    width: 240,
+    minWidth: 200,
     background: '#1e1e2e',
     borderLeft: '1px solid #313244',
     display: 'flex',
@@ -211,8 +270,6 @@ const styles = {
     padding: '2px 4px',
     fontSize: 12,
   },
-  range: { flex: 1 },
-  val: { fontSize: 11, color: '#6c7086', width: 32, textAlign: 'right' as const },
   checkRow: {
     display: 'flex',
     alignItems: 'center',
@@ -224,16 +281,24 @@ const styles = {
   },
   poseLabel: { fontSize: 11, color: '#6c7086', margin: '0 0 4px' },
   kfControls: { marginTop: 6 },
-  kfSliderRow: { display: 'flex', alignItems: 'center', gap: 4, marginBottom: 4 },
-  kfSliderLabel: { width: 44, fontSize: 11, color: '#6c7086', flexShrink: 0 },
-  kfBox: { background: '#181825', borderRadius: 4, padding: '6px 8px', marginTop: 8 },
-  kfRow: {
+  sliderRow: {
     display: 'flex',
-    justifyContent: 'space-between',
-    fontSize: 11,
-    color: '#cdd6f4',
-    padding: '1px 0',
+    alignItems: 'center',
+    gap: 4,
+    marginBottom: 5,
   },
-  kfLabel: { color: '#6c7086' },
-  kfValue: { fontFamily: 'monospace' },
+  sliderLabel: { width: 36, fontSize: 11, color: '#6c7086', flexShrink: 0 },
+  range: { flex: 1, minWidth: 0 },
+  numberInput: {
+    width: 48,
+    background: '#313244',
+    color: '#cdd6f4',
+    border: '1px solid #45475a',
+    borderRadius: 3,
+    padding: '1px 3px',
+    fontSize: 11,
+    textAlign: 'right' as const,
+    flexShrink: 0,
+  },
+  unit: { fontSize: 10, color: '#6c7086', width: 14, flexShrink: 0 },
 } as const;
