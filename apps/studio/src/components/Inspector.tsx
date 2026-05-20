@@ -10,7 +10,14 @@ export function Inspector() {
   const { project, dispatch } = useStudio();
   const layer = project.layers.find((l) => l.id === project.selectedLayerId);
 
-  const identity: PoseKeyframe = { tx: 0, ty: 0, rotationRad: 0, scale: 1, opacity: 1 };
+  const identity: PoseKeyframe = {
+    tx: 0,
+    ty: 0,
+    rotationXRad: 0,
+    rotationYRad: 0,
+    scale: 1,
+    opacity: 1,
+  };
   const activeKf: PoseKeyframe = layer
     ? (layer.pose.keyframes[project.activePoseCell] ?? identity)
     : identity;
@@ -50,6 +57,25 @@ export function Inspector() {
                 {BLEND_MODES.map((m) => (
                   <option key={m} value={m}>
                     {m}
+                  </option>
+                ))}
+              </select>
+            </Row>
+            <Row label="Effect">
+              <select
+                value={layer.effectType}
+                onChange={(e) =>
+                  dispatch({
+                    type: 'SET_LAYER_EFFECT_TYPE',
+                    layerId: layer.id,
+                    effectType: e.target.value,
+                  })
+                }
+                style={styles.select}
+              >
+                {EFFECT_TYPES.map((t) => (
+                  <option key={t.value} value={t.value}>
+                    {t.label}
                   </option>
                 ))}
               </select>
@@ -109,14 +135,24 @@ export function Inspector() {
                     onChange={(v) => setKf({ ty: v })}
                   />
                   <PoseSliderRow
-                    label="rot"
+                    label="rotX"
                     min={-180}
                     max={180}
                     step={1}
-                    value={Math.round(activeKf.rotationRad * RAD_TO_DEG)}
+                    value={Math.round(activeKf.rotationXRad * RAD_TO_DEG)}
                     unit="°"
-                    display={Math.round(activeKf.rotationRad * RAD_TO_DEG)}
-                    onChange={(v) => setKf({ rotationRad: v * DEG_TO_RAD })}
+                    display={Math.round(activeKf.rotationXRad * RAD_TO_DEG)}
+                    onChange={(v) => setKf({ rotationXRad: v * DEG_TO_RAD })}
+                  />
+                  <PoseSliderRow
+                    label="rotY"
+                    min={-180}
+                    max={180}
+                    step={1}
+                    value={Math.round(activeKf.rotationYRad * RAD_TO_DEG)}
+                    unit="°"
+                    display={Math.round(activeKf.rotationYRad * RAD_TO_DEG)}
+                    onChange={(v) => setKf({ rotationYRad: v * DEG_TO_RAD })}
                   />
                   <PoseSliderRow
                     label="scale"
@@ -228,6 +264,19 @@ const BLEND_MODES = [
   'difference',
   'luminosity',
   'plus-lighter',
+];
+
+const EFFECT_TYPES = [
+  { value: 'base', label: 'Base' },
+  { value: 'static_overlay', label: 'Static Overlay' },
+  { value: 'holo_sweep', label: 'Holo Sweep' },
+  { value: 'specular', label: 'Specular' },
+  { value: 'sparkle', label: 'Sparkle' },
+  { value: 'parallax', label: 'Parallax' },
+  { value: 'foil', label: 'Foil' },
+  { value: 'border_foil', label: 'Border Foil' },
+  { value: 'border_glow', label: 'Border Glow' },
+  { value: 'aurora', label: 'Aurora' },
 ];
 
 const styles = {

@@ -17,10 +17,18 @@ const minimalPng = (): Uint8Array => {
   return Uint8Array.from(bin, (c) => c.charCodeAt(0));
 };
 
-const kf = (tx = 0, ty = 0, rotationRad = 0, scale = 1, opacity = 1): PoseKeyframe => ({
+const kf = (
+  tx = 0,
+  ty = 0,
+  rotationYRad = 0,
+  scale = 1,
+  opacity = 1,
+  rotationXRad = 0,
+): PoseKeyframe => ({
   tx,
   ty,
-  rotationRad,
+  rotationXRad,
+  rotationYRad,
   scale,
   opacity,
 });
@@ -73,7 +81,7 @@ describe('parsePoseChunk', () => {
       const got = result.pose.keyframes[i] as PoseKeyframe;
       expect(got.tx).toBeCloseTo(src.tx, 3);
       expect(got.ty).toBeCloseTo(src.ty, 3);
-      expect(got.rotationRad).toBeCloseTo(src.rotationRad, 3);
+      expect(got.rotationYRad).toBeCloseTo(src.rotationYRad, 3);
       expect(got.scale).toBeCloseTo(src.scale, 3);
       expect(got.opacity).toBeCloseTo(src.opacity, 3);
     }
@@ -92,14 +100,14 @@ describe('parsePoseChunk', () => {
   });
 
   it('throws on unknown face code', () => {
-    const buf = new Uint8Array(4 + 9 * 20);
+    const buf = new Uint8Array(4 + 9 * 24);
     buf[0] = 99;
     buf[2] = 3;
     expect(() => parsePoseChunk(buf)).toThrow(XflipParseError);
   });
 
   it('throws on unsupported grid_size', () => {
-    const buf = new Uint8Array(4 + 4 * 20); // wrong size for grid=2
+    const buf = new Uint8Array(4 + 4 * 24); // wrong size for grid=2
     buf[2] = 2;
     expect(() => parsePoseChunk(buf)).toThrow(XflipParseError);
   });
@@ -145,13 +153,13 @@ describe('serializePoseChunk', () => {
   it('produces correct byte length for 3×3', () => {
     const pose = identityPose(3);
     const payload = serializePoseChunk('front', 0, pose);
-    expect(payload.length).toBe(4 + 9 * 20); // 184 bytes
+    expect(payload.length).toBe(4 + 9 * 24); // 220 bytes
   });
 
   it('produces correct byte length for 5×5', () => {
     const pose = identityPose(5);
     const payload = serializePoseChunk('front', 0, pose);
-    expect(payload.length).toBe(4 + 25 * 20); // 504 bytes
+    expect(payload.length).toBe(4 + 25 * 24); // 604 bytes
   });
 });
 
@@ -181,7 +189,7 @@ describe('samplePose', () => {
     const result = samplePose(pose, 0.5, -0.5);
     expect(result.tx).toBeCloseTo(0);
     expect(result.ty).toBeCloseTo(0);
-    expect(result.rotationRad).toBeCloseTo(0);
+    expect(result.rotationYRad).toBeCloseTo(0);
     expect(result.scale).toBeCloseTo(1);
     expect(result.opacity).toBeCloseTo(1);
   });
@@ -246,7 +254,7 @@ describe('identityPose', () => {
     for (const kf of identityPose(3).keyframes) {
       expect(kf.tx).toBe(0);
       expect(kf.ty).toBe(0);
-      expect(kf.rotationRad).toBe(0);
+      expect(kf.rotationYRad).toBe(0);
       expect(kf.scale).toBe(1);
       expect(kf.opacity).toBe(1);
     }

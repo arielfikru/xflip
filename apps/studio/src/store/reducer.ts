@@ -66,6 +66,14 @@ export function studioReducer(state: StudioProject, action: StudioAction): Studi
         ),
       };
 
+    case 'SET_LAYER_EFFECT_TYPE':
+      return {
+        ...state,
+        layers: state.layers.map((l) =>
+          l.id === action.layerId ? { ...l, effectType: action.effectType } : l,
+        ),
+      };
+
     case 'SET_LAYER_POSE_ENABLED':
       return {
         ...state,

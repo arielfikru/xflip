@@ -10,14 +10,14 @@
  *   0x01  u8   layer_id
  *   0x02  u8   grid_size  3 (v1.2 only; 5 reserved for v1.3)
  *   0x03  u8   reserved   must be 0
- *   0x04  N×20 keyframes  N=grid_size², row-major (tiltY ascending),
- *                         each = 5× f32 BE: tx, ty, rotation_rad, scale, opacity
+ *   0x04  N×24 keyframes  N=grid_size², row-major (tiltY ascending),
+ *                         each = 6× f32 BE: tx, ty, rotation_x_rad, rotation_y_rad, scale, opacity
  */
 
 import { XflipEncodeError, XflipParseError } from './errors.js';
 import type { PoseGridSize, PoseKeyframe, XflipPose } from './types.js';
 
-const KEYFRAME_BYTES = 20; // 5 × float32
+const KEYFRAME_BYTES = 24; // 6 × float32
 const HEADER_BYTES = 4;
 
 export interface ParsedPoseChunk {
@@ -72,9 +72,10 @@ export function parsePoseChunk(payload: Uint8Array): ParsedPoseChunk {
     keyframes.push({
       tx: dv.getFloat32(base, false),
       ty: dv.getFloat32(base + 4, false),
-      rotationRad: dv.getFloat32(base + 8, false),
-      scale: dv.getFloat32(base + 12, false),
-      opacity: dv.getFloat32(base + 16, false),
+      rotationXRad: dv.getFloat32(base + 8, false),
+      rotationYRad: dv.getFloat32(base + 12, false),
+      scale: dv.getFloat32(base + 16, false),
+      opacity: dv.getFloat32(base + 20, false),
     });
   }
   return { face, layerId, pose: { gridSize, keyframes } };
@@ -113,9 +114,10 @@ export function serializePoseChunk(
     const kf = pose.keyframes[i] as PoseKeyframe;
     dv.setFloat32(base, kf.tx, false);
     dv.setFloat32(base + 4, kf.ty, false);
-    dv.setFloat32(base + 8, kf.rotationRad, false);
-    dv.setFloat32(base + 12, kf.scale, false);
-    dv.setFloat32(base + 16, kf.opacity, false);
+    dv.setFloat32(base + 8, kf.rotationXRad, false);
+    dv.setFloat32(base + 12, kf.rotationYRad, false);
+    dv.setFloat32(base + 16, kf.scale, false);
+    dv.setFloat32(base + 20, kf.opacity, false);
   }
   return out;
 }
@@ -144,18 +146,19 @@ export function samplePose(pose: XflipPose, nx: number, ny: number): PoseKeyfram
   const kf = (row: number, col: number): PoseKeyframe =>
     pose.keyframes[row * g + col] as PoseKeyframe;
 
-  const lerp5 = (a: PoseKeyframe, b: PoseKeyframe, t: number): PoseKeyframe => ({
+  const lerp6 = (a: PoseKeyframe, b: PoseKeyframe, t: number): PoseKeyframe => ({
     tx: a.tx + (b.tx - a.tx) * t,
     ty: a.ty + (b.ty - a.ty) * t,
-    rotationRad: a.rotationRad + (b.rotationRad - a.rotationRad) * t,
+    rotationXRad: a.rotationXRad + (b.rotationXRad - a.rotationXRad) * t,
+    rotationYRad: a.rotationYRad + (b.rotationYRad - a.rotationYRad) * t,
     scale: a.scale + (b.scale - a.scale) * t,
     opacity: a.opacity + (b.opacity - a.opacity) * t,
   });
 
   // Bilinear: interpolate along columns first, then rows.
-  const top = lerp5(kf(r0, c0), kf(r0, c1), wc);
-  const bot = lerp5(kf(r1, c0), kf(r1, c1), wc);
-  return lerp5(top, bot, wr);
+  const top = lerp6(kf(r0, c0), kf(r0, c1), wc);
+  const bot = lerp6(kf(r1, c0), kf(r1, c1), wc);
+  return lerp6(top, bot, wr);
 }
 
 /**
@@ -168,7 +171,8 @@ export function identityPose(gridSize: PoseGridSize = 3): XflipPose {
   const keyframes: PoseKeyframe[] = Array.from({ length: count }, () => ({
     tx: 0,
     ty: 0,
-    rotationRad: 0,
+    rotationXRad: 0,
+    rotationYRad: 0,
     scale: 1,
     opacity: 1,
   }));

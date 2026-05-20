@@ -30,7 +30,7 @@ export function Canvas() {
                 opacity: (layer.opacity / 255) * (kf?.opacity ?? 1),
                 mixBlendMode: layer.blendMode as React.CSSProperties['mixBlendMode'],
                 transform: kf
-                  ? `perspective(800px) translate3d(${kf.tx}px,${kf.ty}px,0) rotateY(${kf.rotationRad}rad) scale(${kf.scale})`
+                  ? `perspective(800px) translate3d(${kf.tx}px,${kf.ty}px,0) rotateX(${kf.rotationXRad}rad) rotateY(${kf.rotationYRad}rad) scale(${kf.scale})`
                   : 'none',
                 outline: isSelected ? '2px solid #89b4fa' : 'none',
                 cursor: 'pointer',

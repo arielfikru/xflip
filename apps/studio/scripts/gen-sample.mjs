@@ -90,7 +90,7 @@ const shadowBytes = circlePng(W, H, [49, 50, 68]);       // dim circle (shadow)
 
 function headPose(tx, ty) {
   const base = identityPose(3);
-  const kf = { tx, ty, rotationRad: 0, scale: 1, opacity: 1 };
+  const kf = { tx, ty, rotationXRad: 0, rotationYRad: 0, scale: 1, opacity: 1 };
   return { ...base, keyframes: base.keyframes.map((_, i) => {
     const col = i % 3;
     const colTx = col === 0 ? -tx : col === 2 ? tx : 0;
@@ -102,7 +102,7 @@ function headPose(tx, ty) {
 
 function shadowPose(tx, ty) {
   const base = identityPose(3);
-  const kf = { tx: 0, ty: 0, rotationRad: 0, scale: 0.9, opacity: 0.6 };
+  const kf = { tx: 0, ty: 0, rotationXRad: 0, rotationYRad: 0, scale: 0.9, opacity: 0.6 };
   return { ...base, keyframes: base.keyframes.map((_, i) => {
     const col = i % 3;
     const colTx = col === 0 ? tx * 0.5 : col === 2 ? -tx * 0.5 : 0;

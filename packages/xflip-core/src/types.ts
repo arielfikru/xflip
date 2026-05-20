@@ -55,8 +55,10 @@ export interface PoseKeyframe {
   tx: number;
   /** Y translation offset in pixels. */
   ty: number;
-  /** Rotation in radians around layer center. */
-  rotationRad: number;
+  /** X-axis rotation in radians (rotateX, tilt up/down). */
+  rotationXRad: number;
+  /** Y-axis rotation in radians (rotateY, head-turn). */
+  rotationYRad: number;
   /** Uniform scale multiplier (1.0 = no change). */
   scale: number;
   /** Opacity multiplier in [0, 1] (1.0 = no change). */
