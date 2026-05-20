@@ -4,9 +4,11 @@
 > Schema is stable; agents append rows rather than rewriting history.
 
 **Last updated:** 2026-05-20
-**Current phase:** P4 (xflip-cli)
-**Current task:** P4.7 (CLI README + ADR for argument-style decisions)
-**Status:** P4.6 done. CI now runs `cli-smoke` on ubuntu/macOS/windows: typecheck → CLI tests → CLI build → `scripts/cli-smoke.mjs` that drives the real bin through help/create/inspect/validate/extract/layers-add/validate-layered + META round-trip + unknown-command exit-2. Local smoke pass: 9/9 checks.
+**Current phase:** P5 (xflip-react)
+**Current task:** P5.1 (`@xflip/react` package skeleton)
+**Status:** P4 complete. All seven CLI tasks shipped (inspect, validate, extract, create, layers add, cross-platform smoke matrix, README + ADR 0003). Suite at 369 tests; biome clean; CLI bundle stays at the size budget. Phase 5 begins: build a React wrapper around `<xflip-card>` so consumers get a typed `<XflipCard src=...>` component without web-component plumbing.
+
+**P4.6 status (history):** CI `cli-smoke` job builds the CLI bin and drives `scripts/cli-smoke.mjs` end-to-end on ubuntu / macOS / windows (help, create, inspect, validate, extract, layers add, validate of layered output, META round-trip, unknown-command exit-2). Local: 9/9 checks pass.
 
 **P4.5 status (history):** `xflip layers add <file> --face front|back --image <path> --effect-type <name> --output <out>` inserts a layer into `fLyr`/`bLyr`, creating the chunk when absent and promoting v1.0 → v1.1. Image format inferred from `--image` extension; override with `--format`. Defaults: `layer_id` = next unused, `z_order` = max + 1 (capped at 255), `opacity` = 255, `blend_mode` = normal. Optional `--response <path>` reads UTF-8 JSON. Refuses to overwrite `--output` (and in-place writes) without `--force`. Pure `addLayer()` + `encodeWithLayer` + `isBlendMode` re-exported from the library entry. 33 new tests bring suite to 369 passing.
 
@@ -16,11 +18,10 @@
 
 ## Quick Resume Pointer
 
-**Next Task:** `P4.7` — Write a README for `@xflip/cli` documenting every
-subcommand with examples, exit-code semantics, and the
-`--strict-ancillary-crc` / `--force` flags. Add ADR 0003 capturing the
-argument-style decisions (flag-only, no positional sub-options;
-`node:util.parseArgs`; zero runtime deps).
+**Next Task:** `P5.1` — Scaffold `packages/xflip-react`: tsup ESM library
+config, peer-dep on React 18+, workspace dep on `@xflip/viewer`,
+per-package typecheck + vitest. No component exports yet — just the
+skeleton that other P5 tasks build on.
 
 **Concrete next actions** for P1 (per AGENTS.md Phase 1 + PROGRESS Phase 1 breakdown):
 
@@ -83,8 +84,8 @@ Mark each phase done only when its AGENTS.md DoD is fully met.
 | P1    | xflip-core v1.0   | ✅ DONE   | 2026-05-19 | 2026-05-20 | Bundle 3.23KB/10KB; cov 98.72%; zero deps |
 | P2    | xflip-core v1.1   | ✅ DONE   | 2026-05-20 | 2026-05-20 | 229 tests; layered chunks lifted to typed fields |
 | P3    | xflip-viewer      | ✅ DONE   | 2026-05-20 | 2026-05-20 | All 9 tasks shipped; Playwright matrix in CI; viewer 6.82 KB gzip |
-| P4    | xflip-cli         | 🚧 WIP    | 2026-05-20 | -         | P4.1-4.6 done; cross-platform CI smoke matrix in place |
-| P5    | xflip-react       | ☐ TODO   | -         | -         | |
+| P4    | xflip-cli         | ✅ DONE   | 2026-05-20 | 2026-05-20 | 5 subcommands; CI smoke matrix; README + ADR 0003 |
+| P5    | xflip-react       | ☐ TODO   | -         | -         | Build React wrapper around `<xflip-card>` |
 | P6    | playground        | ☐ TODO   | -         | -         | |
 | P7    | docs              | ☐ TODO   | -         | -         | |
 | P8    | launch            | ☐ TODO   | -         | -         | Requires user OK |
@@ -101,6 +102,7 @@ Append rows as tasks complete. Format:
 
 | Date       | Task   | Description                         | Commit   | Notes |
 | ---------- | ------ | ----------------------------------- | -------- | ----- |
+| 2026-05-20 | P4.7   | `@xflip/cli` README documents all 5 subcommands + exit codes + programmatic API; ADR 0003 locks down argument style (parseArgs, flag-only, --output gates) | 2d87a51 | docs only; no test delta |
 | 2026-05-20 | P4.6   | CI `cli-smoke` matrix (ubuntu / macOS / windows) — builds the CLI bin, runs `scripts/cli-smoke.mjs` end-to-end against the real `xflip` for help/create/inspect/validate/extract/layers-add/validate-layered + META round-trip + unknown-command exit-2 | 3e8d5b0 | local smoke pass 9/9; biome ignores `.github/` and `scripts/` so no lint config change |
 | 2026-05-20 | P4.5   | `xflip layers add` inserts a layer into fLyr/bLyr; creates chunk if absent; promotes v1.0 → v1.1; defaults for layer_id/z_order/opacity; optional --response JSON file; --force gates overwrites incl. in-place | be9d9b4 | +33 tests (369 total); programmatic `addLayer()` + `encodeWithLayer()` + `isBlendMode` re-exported |
 | 2026-05-20 | P4.4   | `xflip create` builds .xflip from two images; extension→format inference with --front-format/--back-format overrides; --flip-axis / --default-back / --no-flip-anim flags; --meta validates UTF-8 JSON; --force overwrite gate | 7b2cc2e | +32 tests (336 total); programmatic `buildFile()` + `formatFromExtension()` re-exported |
@@ -233,7 +235,7 @@ works; Playwright suites pass on three engines.
 | P4.4    | `xflip create --front a --back b --output card.xflip [--meta]`    | ✅      |
 | P4.5    | `xflip layers add <file> --layer ...` (advanced)                  | ✅      |
 | P4.6    | Cross-platform smoke (macOS, Linux, Windows) via CI matrix        | ✅      |
-| P4.7    | README + ADR for CLI argument-style decisions                     | ☐      |
+| P4.7    | README + ADR for CLI argument-style decisions                     | ✅      |
 
 **P4 DoD:** Per AGENTS.md §5 Phase 4 — all commands work as documented;
 helpful error messages on invalid input; `--help` output for every
