@@ -5,7 +5,7 @@ import { useStudio } from '../store/context.js';
 type ExportCodec = 'webp' | 'avif' | 'png';
 
 export function TopBar() {
-  const { project, dispatch } = useStudio();
+  const { project, dispatch, saveStatus } = useStudio();
   const [codec, setCodec] = useState<ExportCodec>('webp');
   const [quality, setQuality] = useState(85);
   const [exporting, setExporting] = useState(false);
@@ -74,6 +74,11 @@ export function TopBar() {
   return (
     <header style={styles.bar}>
       <span style={styles.logo}>xflip Studio</span>
+      <span style={styles.saveIndicator}>
+        {saveStatus === 'saving' && '💾 saving…'}
+        {saveStatus === 'saved' && '✓ saved'}
+        {saveStatus === 'error' && '⚠ save error'}
+      </span>
       <div style={styles.settings}>
         <label style={styles.settingLabel}>
           Codec
@@ -191,7 +196,8 @@ const styles = {
     gap: 12,
     flexShrink: 0,
   },
-  logo: { fontWeight: 700, fontSize: 15, color: '#cdd6f4', flex: 1 },
+  logo: { fontWeight: 700, fontSize: 15, color: '#cdd6f4' },
+  saveIndicator: { flex: 1, fontSize: 11, color: '#6c7086', paddingLeft: 10 },
   settings: { display: 'flex', alignItems: 'center', gap: 10 },
   settingLabel: {
     display: 'flex',
