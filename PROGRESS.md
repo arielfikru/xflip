@@ -4,9 +4,9 @@
 > Schema is stable; agents append rows rather than rewriting history.
 
 **Last updated:** 2026-05-20
-**Current phase:** P6 (playground)
-**Current task:** P6.2 (Polish + multi-sample gallery)
-**Status:** P6.1 done. `apps/playground` ships a Vite + React app that consumes `@xflip/react`: source-aliased workspace deps (HMR edge-to-edge), generated fixtures via `scripts/build-fixtures.mjs` (synthesizes solid-color PNGs in pure Node + zlib, then encodes flat + layered `.xflip` files via `@xflip/core`), a dropdown to pick between samples, a file-input for uploading custom `.xflip` (revokes blob URLs on replacement), a tilt-max slider, Flip + Enable-gyroscope buttons that call viewer methods through a forwarded ref, and a sidebar showing `useXflip` status + decoded JSON. Verified visually in Chromium: blue front renders, `xflip-load` fires (`v1.1 · 240×336`). Next: P6.2 expands the sample gallery and polishes the layout. `<XflipCard>` test suite widened to cover tiltMax prop updates, className/style/hidden/aria-label forwarding (React's custom-element class-attr heuristic accommodated), element identity across `src` changes, ref detach on unmount, callback-ref clearing, and listener swap when `onLoad` reference changes. Suite at 392 tests (+6); biome + typecheck clean. Next: P5.6 ships the package README with copy-paste examples for `<XflipCard>` and `useXflip`.
+**Current phase:** P9 (pose-rig studio)
+**Current task:** P9.4 (drag-to-edit full affine: rotation + scale + opacity in canvas)
+**Status:** P9.1 (RFC), P9.2 (core pOse codec), P9.3 (studio scaffold) done. P6.2 deferred per user decision — P9 studio takes priority. `apps/playground` ships a Vite + React app that consumes `@xflip/react`: source-aliased workspace deps (HMR edge-to-edge), generated fixtures via `scripts/build-fixtures.mjs` (synthesizes solid-color PNGs in pure Node + zlib, then encodes flat + layered `.xflip` files via `@xflip/core`), a dropdown to pick between samples, a file-input for uploading custom `.xflip` (revokes blob URLs on replacement), a tilt-max slider, Flip + Enable-gyroscope buttons that call viewer methods through a forwarded ref, and a sidebar showing `useXflip` status + decoded JSON. Verified visually in Chromium: blue front renders, `xflip-load` fires (`v1.1 · 240×336`). Next: P6.2 expands the sample gallery and polishes the layout. `<XflipCard>` test suite widened to cover tiltMax prop updates, className/style/hidden/aria-label forwarding (React's custom-element class-attr heuristic accommodated), element identity across `src` changes, ref detach on unmount, callback-ref clearing, and listener swap when `onLoad` reference changes. Suite at 392 tests (+6); biome + typecheck clean. Next: P5.6 ships the package README with copy-paste examples for `<XflipCard>` and `useXflip`.
 
 **P4.6 status (history):** CI `cli-smoke` job builds the CLI bin and drives `scripts/cli-smoke.mjs` end-to-end on ubuntu / macOS / windows (help, create, inspect, validate, extract, layers add, validate of layered output, META round-trip, unknown-command exit-2). Local: 9/9 checks pass.
 
@@ -18,12 +18,10 @@
 
 ## Quick Resume Pointer
 
-**Next Task:** `P6.2` — Expand the playground sample gallery (cover
-all four `flip_axis` orientations + a hEfx-only file with no
-front/back layers); add presets for `tilt_max_angle` and surface the
-prefers-reduced-motion override toggle as a UI control. Keep the
-single-page layout but make it responsive (320 px viewport must still
-show the card + at least one control).
+**Next Task:** `P9.4` — Full affine keyframe editing in canvas: rotate
+layer via modifier+drag or dedicated handles; scale via pinch-style handle;
+opacity slider in Inspector wired to active pose cell; all five transform
+fields (tx, ty, rotationRad, scale, opacity) live-editable per-cell.
 
 **Concrete next actions** for P1 (per AGENTS.md Phase 1 + PROGRESS Phase 1 breakdown):
 
@@ -88,9 +86,10 @@ Mark each phase done only when its AGENTS.md DoD is fully met.
 | P3    | xflip-viewer      | ✅ DONE   | 2026-05-20 | 2026-05-20 | All 9 tasks shipped; Playwright matrix in CI; viewer 6.82 KB gzip |
 | P4    | xflip-cli         | ✅ DONE   | 2026-05-20 | 2026-05-20 | 5 subcommands; CI smoke matrix; README + ADR 0003 |
 | P5    | xflip-react       | ✅ DONE   | 2026-05-20 | 2026-05-20 | All 7 tasks shipped; bundle 4.46 KB ≤ 5 KB; SSR-safe |
-| P6    | playground        | ☐ TODO   | -         | -         | |
+| P6    | playground        | ⏸️ PAUSED  | -         | -         | Deferred; P9 studio prioritized |
 | P7    | docs              | ☐ TODO   | -         | -         | |
 | P8    | launch            | ☐ TODO   | -         | -         | Requires user OK |
+| P9    | pose-rig studio   | 🔄 IN PROGRESS | 2026-05-20 | -  | P9.1-9.3 done (RFC + core + scaffold) |
 
 ---
 
@@ -104,6 +103,10 @@ Append rows as tasks complete. Format:
 
 | Date       | Task   | Description                         | Commit   | Notes |
 | ---------- | ------ | ----------------------------------- | -------- | ----- |
+| 2026-05-20 | P9.3   | `apps/studio` scaffold: Vite + React pose-rig authoring tool; LayerPanel (file import, pose toggle), Canvas (drag tx/ty per cell), PoseGrid (3×3 cell selector), Inspector (blend/opacity/keyframe readout), TopBar (.xflip export + reset) | 6038daa | biome/lint clean; all files ESM strict |
+| 2026-05-20 | P9.2   | Viewer integration: `#poseLayers` tracking, `#applyPoseLayers(nx,ny)` per RAF tick, CSS `data-has-pose` bypasses parallax vars | e5b5a7a | viewer typecheck clean |
+| 2026-05-20 | P9.1   | `pOse` chunk codec in xflip-core v1.2: `parsePoseChunk`, `serializePoseChunk`, `samplePose` bilinear, `identityPose`; 25 tests; types + index exports | 8310539 | zero allocs on hot path; PoseGridSize = 3\|5 |
+| 2026-05-20 | P9.0   | RFC `docs/studio-rfc.md` — Live2D-style pose rig design: pOse chunk wire format, bilinear sampling, studio UX, phase plan P9.1-9.7; all open questions self-answered | (not separate commit) | |
 | 2026-05-20 | P6.1   | `apps/playground` scaffold: Vite + React + workspace-source aliases; `scripts/build-fixtures.mjs` synthesizes solid-color PNGs (node:zlib) + encodes flat + layered `.xflip`; UI ships sample dropdown, custom file upload (blob URLs revoked on swap), tilt-max slider, Flip + gyroscope buttons via forwarded ref, sidebar with `useXflip` status + decoded JSON | a7d2cb0  | verified in Chromium @ 1200×800; status reads "success" v1.1 · 240×336; lint + typecheck clean; bundle 51.62 KB gzip (includes react-dom) |
 | 2026-05-20 | P5.7   | size-limit entry `@xflip/react (ESM, gzip)` at 5 KB ceiling; ignores `react`, `react-dom`, `react/jsx-runtime`, `@xflip/viewer`; closes P5 | (this)   | measured 4.46 KB gzip incl. `@xflip/core` decode |
 | 2026-05-20 | P5.6   | `packages/xflip-react/README.md` — install, SSR safety guarantee, `<XflipCard>` props table, ref forwarding example, JSX-augmentation note, `useXflip(src)` state machine | 8ae6028  | docs only; no test delta |
@@ -267,6 +270,19 @@ command; tested on macOS, Linux, Windows.
 in a React app; props are fully typed; events flow through React handlers;
 SSR-safe; bundle stays within the size budget (target ≤ 5 KB gzip on top
 of `@xflip/viewer`).
+
+## Phase 9 (Pose-Rig Studio) Task Breakdown
+
+| Task ID | Description                                                       | Status |
+| ------- | ----------------------------------------------------------------- | ------ |
+| P9.0    | RFC `docs/studio-rfc.md` — design + wire-format decisions        | ✅      |
+| P9.1    | `pOse` chunk codec in xflip-core v1.2 (`samplePose`, tests)     | ✅      |
+| P9.2    | Viewer integration: pose layer transforms per RAF tick           | ✅      |
+| P9.3    | `apps/studio` scaffold: all panels, export pipeline              | ✅      |
+| P9.4    | Full affine editing: rotation + scale + opacity per cell          | ☐      |
+| P9.5    | Export polish: codec selector (WebP/AVIF), quality knob          | ☐      |
+| P9.6    | IndexedDB autosave + project JSON import/export                  | ☐      |
+| P9.7    | Sample card demo: head-turn 3×3 pose with 3+ layers              | ☐      |
 
 ## Phase 6+ Task Breakdown
 
