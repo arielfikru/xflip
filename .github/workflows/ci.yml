@@ -107,3 +107,45 @@ jobs:
 
       - name: Size
         run: pnpm size
+
+  e2e:
+    name: e2e (chromium / firefox / webkit)
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    needs: build-and-test
+    strategy:
+      fail-fast: false
+      matrix:
+        project: [chromium, firefox, webkit]
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 11
+          run_install: false
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Install Playwright browser (${{ matrix.project }})
+        run: pnpm --filter @xflip/viewer exec playwright install --with-deps ${{ matrix.project }}
+
+      - name: Run Playwright (${{ matrix.project }})
+        run: pnpm --filter @xflip/viewer exec playwright test --project=${{ matrix.project }}
+
+      - name: Upload report
+        if: ${{ failure() }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-report-${{ matrix.project }}
+          path: packages/xflip-viewer/playwright-report
+          retention-days: 7
