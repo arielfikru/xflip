@@ -5,8 +5,8 @@
 
 **Last updated:** 2026-05-20
 **Current phase:** P4 (xflip-cli)
-**Current task:** P4.4 (`xflip create` command)
-**Status:** P4.3 done. `xflip extract <file> --to <dir>` decodes a file and writes `front.<ext>` / `back.<ext>` (extension from HEAD image-format code; raw/custom → `.bin`) plus `meta.json` when a META ancillary chunk is present. `mkdir -p` on target, refuses to overwrite without `--force`. Programmatic `extract()` re-exported. 19 new tests bring suite to 304 passing.
+**Current task:** P4.5 (`xflip layers add` — advanced)
+**Status:** P4.4 done. `xflip create --front a --back b --output o --width W --height H` builds a v1.0 file from two image inputs; formats inferred from filename extension with `--front-format` / `--back-format` overrides; supports `--flip-axis`, `--default-back`, `--no-flip-anim`, `--meta` (validates UTF-8 JSON before embedding), and `--force`. Programmatic `buildFile()` + `formatFromExtension()` re-exported. 32 new tests bring suite to 336 passing.
 
 **P4.1 status (history):** `@xflip/cli` package scaffolded (tsup esm + node platform, per-pkg typecheck, vitest, workspace dep on `@xflip/core`, `bin: xflip → dist/cli.js`). First command `xflip inspect <file>` ships: signature + per-chunk summary (type/offset/length/critical), `--strict-ancillary-crc` flag, `-h/--help` and root `help` dispatch, exit codes 0/1/2 (success / runtime error / usage error). Programmatic `inspect()` exported from library entry. 12 new tests (4 inspect, 8 cli) bring suite to 275 passing. Zero runtime deps (uses `node:util.parseArgs`).
 
@@ -14,11 +14,12 @@
 
 ## Quick Resume Pointer
 
-**Next Task:** `P4.4` — `xflip create --front a --back b --output card.xflip [--meta]` command.
-Build an xflip file from two image inputs plus optional META JSON; infer
-each face's image format from file extension (with explicit `--front-format` /
-`--back-format` override). Default canvas size from the first input's
-declared dimensions if known, otherwise require `--width` / `--height`.
+**Next Task:** `P4.5` — `xflip layers add <file> --layer <spec>` command.
+Take an existing .xflip and insert a layer into its `fLyr` or `bLyr`
+chunk (creating the chunk if absent), promoting the file to v1.1 when
+necessary. Spec: image path + format + blend mode + effect type + z-order
++ optional response JSON. Refuse to overwrite without `--force`. Needs
+care around chunk-order spec rules and v1.0→v1.1 promotion semantics.
 
 **Concrete next actions** for P1 (per AGENTS.md Phase 1 + PROGRESS Phase 1 breakdown):
 
@@ -81,7 +82,7 @@ Mark each phase done only when its AGENTS.md DoD is fully met.
 | P1    | xflip-core v1.0   | ✅ DONE   | 2026-05-19 | 2026-05-20 | Bundle 3.23KB/10KB; cov 98.72%; zero deps |
 | P2    | xflip-core v1.1   | ✅ DONE   | 2026-05-20 | 2026-05-20 | 229 tests; layered chunks lifted to typed fields |
 | P3    | xflip-viewer      | ✅ DONE   | 2026-05-20 | 2026-05-20 | All 9 tasks shipped; Playwright matrix in CI; viewer 6.82 KB gzip |
-| P4    | xflip-cli         | 🚧 WIP    | 2026-05-20 | -         | P4.1-4.3 done; inspect/validate/extract shipped |
+| P4    | xflip-cli         | 🚧 WIP    | 2026-05-20 | -         | P4.1-4.4 done; inspect/validate/extract/create shipped |
 | P5    | xflip-react       | ☐ TODO   | -         | -         | |
 | P6    | playground        | ☐ TODO   | -         | -         | |
 | P7    | docs              | ☐ TODO   | -         | -         | |
@@ -99,6 +100,7 @@ Append rows as tasks complete. Format:
 
 | Date       | Task   | Description                         | Commit   | Notes |
 | ---------- | ------ | ----------------------------------- | -------- | ----- |
+| 2026-05-20 | P4.4   | `xflip create` builds .xflip from two images; extension→format inference with --front-format/--back-format overrides; --flip-axis / --default-back / --no-flip-anim flags; --meta validates UTF-8 JSON; --force overwrite gate | 7b2cc2e | +32 tests (336 total); programmatic `buildFile()` + `formatFromExtension()` re-exported |
 | 2026-05-20 | P4.3   | `xflip extract <file> --to <dir>` writes front/back (+meta.json when META present), mkdir -p target, refuse overwrite without --force | 3e01c3b | +19 tests (304 total); programmatic `extract()` re-exported |
 | 2026-05-20 | P4.2   | `xflip validate <file>` via decode() (OK / FAIL reports, exit 0/1); shared file+CRC arg helper extracted | 6f99efc  | +10 tests (285 total) |
 | 2026-05-20 | P4.1   | @xflip/cli skeleton + `xflip inspect` command (tsup, bin, workspace dep on @xflip/core, node:util.parseArgs, zero runtime deps beyond core) | 5786c72  | 12 tests (inspect + cli); total 275 |
@@ -225,7 +227,7 @@ works; Playwright suites pass on three engines.
 | P4.1    | Package skeleton + `xflip inspect <file>` command                 | ✅      |
 | P4.2    | `xflip validate <file>` — full decode-based structural check      | ✅      |
 | P4.3    | `xflip extract <file> --to <dir>` — write FRNT/BACK + META        | ✅      |
-| P4.4    | `xflip create --front a --back b --output card.xflip [--meta]`    | ☐      |
+| P4.4    | `xflip create --front a --back b --output card.xflip [--meta]`    | ✅      |
 | P4.5    | `xflip layers add <file> --layer ...` (advanced)                  | ☐      |
 | P4.6    | Cross-platform smoke (macOS, Linux, Windows) via CI matrix        | ☐      |
 | P4.7    | README + ADR for CLI argument-style decisions                     | ☐      |
