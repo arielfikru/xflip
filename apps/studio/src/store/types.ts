@@ -41,6 +41,8 @@ export type StudioAction =
   | { type: 'REMOVE_LAYER'; id: number }
   | { type: 'SELECT_LAYER'; id: number | null }
   | { type: 'REORDER_LAYER'; id: number; newZOrder: number }
+  | { type: 'SET_LAYER_OPACITY'; layerId: number; opacity: number }
+  | { type: 'SET_LAYER_BLEND_MODE'; layerId: number; blendMode: string }
   | { type: 'SET_LAYER_POSE_CELL'; layerId: number; cellIndex: number; keyframe: PoseKeyframe }
   | { type: 'SET_LAYER_POSE_ENABLED'; layerId: number; enabled: boolean }
   | { type: 'SET_ACTIVE_POSE_CELL'; cellIndex: number }

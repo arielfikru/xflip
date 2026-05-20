@@ -50,6 +50,22 @@ export function studioReducer(state: StudioProject, action: StudioAction): Studi
       };
     }
 
+    case 'SET_LAYER_OPACITY':
+      return {
+        ...state,
+        layers: state.layers.map((l) =>
+          l.id === action.layerId ? { ...l, opacity: action.opacity } : l,
+        ),
+      };
+
+    case 'SET_LAYER_BLEND_MODE':
+      return {
+        ...state,
+        layers: state.layers.map((l) =>
+          l.id === action.layerId ? { ...l, blendMode: action.blendMode } : l,
+        ),
+      };
+
     case 'SET_LAYER_POSE_ENABLED':
       return {
         ...state,

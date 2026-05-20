@@ -2,12 +2,16 @@ import { samplePose } from '@xflip/core';
 import type React from 'react';
 import { useRef, useState } from 'react';
 import { useStudio } from '../store/context.js';
-import type { StudioLayer } from '../store/types.js';
+import type { PoseKeyframe, StudioLayer } from '../store/types.js';
+
+type DragMode = 'translate' | 'rotate' | 'scale';
 
 /**
  * Canvas: renders all layers as positioned DOM elements.
- * Clicking a layer selects it. Drag moves the selected layer's
- * keyframe offset for the active pose cell.
+ * Drag modes (hold modifier at drag start):
+ *   plain  → translate (tx, ty)
+ *   Shift  → rotate around canvas center
+ *   Ctrl   → scale (drag up = bigger)
  */
 export function Canvas() {
   const { project, dispatch } = useStudio();
@@ -16,7 +20,11 @@ export function Canvas() {
     layerId: number;
     startX: number;
     startY: number;
-    baseKf: { tx: number; ty: number };
+    canvasCX: number;
+    canvasCY: number;
+    startAngle: number;
+    mode: DragMode;
+    baseKf: PoseKeyframe;
   } | null>(null);
 
   const sorted = [...project.layers].sort((a, b) => a.zOrder - b.zOrder);
@@ -27,11 +35,25 @@ export function Canvas() {
     dispatch({ type: 'SELECT_LAYER', id: layer.id });
     if (!layer.poseEnabled) return;
     const kf = samplePose(layer.pose, nx, ny);
+    const mode: DragMode = e.shiftKey ? 'rotate' : e.ctrlKey || e.metaKey ? 'scale' : 'translate';
+    const rect = canvasRef.current?.getBoundingClientRect();
+    const cx = rect ? rect.left + rect.width / 2 : e.clientX;
+    const cy = rect ? rect.top + rect.height / 2 : e.clientY;
     setDragging({
       layerId: layer.id,
       startX: e.clientX,
       startY: e.clientY,
-      baseKf: { tx: kf.tx, ty: kf.ty },
+      canvasCX: cx,
+      canvasCY: cy,
+      startAngle: Math.atan2(e.clientY - cy, e.clientX - cx),
+      mode,
+      baseKf: {
+        tx: kf.tx,
+        ty: kf.ty,
+        rotationRad: kf.rotationRad,
+        scale: kf.scale,
+        opacity: kf.opacity,
+      },
     });
     (e.target as HTMLElement).setPointerCapture(e.pointerId);
   };
@@ -40,28 +62,42 @@ export function Canvas() {
     if (!dragging) return;
     const layer = project.layers.find((l) => l.id === dragging.layerId);
     if (!layer) return;
-    const dx = e.clientX - dragging.startX;
-    const dy = e.clientY - dragging.startY;
-    const existing = layer.pose.keyframes[project.activePoseCell] ?? {
+    const existing: PoseKeyframe = layer.pose.keyframes[project.activePoseCell] ?? {
       tx: 0,
       ty: 0,
       rotationRad: 0,
       scale: 1,
       opacity: 1,
     };
+    const dx = e.clientX - dragging.startX;
+    const dy = e.clientY - dragging.startY;
+    let newKf: PoseKeyframe;
+    if (dragging.mode === 'rotate') {
+      const currentAngle = Math.atan2(e.clientY - dragging.canvasCY, e.clientX - dragging.canvasCX);
+      newKf = {
+        ...existing,
+        rotationRad: dragging.baseKf.rotationRad + (currentAngle - dragging.startAngle),
+      };
+    } else if (dragging.mode === 'scale') {
+      newKf = { ...existing, scale: Math.max(0.01, dragging.baseKf.scale * Math.exp(-dy / 200)) };
+    } else {
+      newKf = { ...existing, tx: dragging.baseKf.tx + dx, ty: dragging.baseKf.ty + dy };
+    }
     dispatch({
       type: 'SET_LAYER_POSE_CELL',
       layerId: dragging.layerId,
       cellIndex: project.activePoseCell,
-      keyframe: {
-        ...existing,
-        tx: dragging.baseKf.tx + dx,
-        ty: dragging.baseKf.ty + dy,
-      },
+      keyframe: newKf,
     });
   };
 
   const handlePointerUp = () => setDragging(null);
+
+  const cursorForMode = (mode: DragMode | null) => {
+    if (mode === 'rotate') return 'crosshair';
+    if (mode === 'scale') return 'ns-resize';
+    return 'grab';
+  };
 
   return (
     <div style={styles.wrapper}>
@@ -88,7 +124,7 @@ export function Canvas() {
                   ? `translate3d(${kf.tx}px,${kf.ty}px,0) rotate(${kf.rotationRad}rad) scale(${kf.scale})`
                   : 'none',
                 outline: isSelected ? '2px solid #89b4fa' : 'none',
-                cursor: 'grab',
+                cursor: dragging?.layerId === layer.id ? cursorForMode(dragging.mode) : 'grab',
               }}
               onPointerDown={(e) => handlePointerDown(e, layer)}
             />
@@ -96,10 +132,13 @@ export function Canvas() {
         })}
         {sorted.length === 0 && <div style={styles.empty}>Add layers from the panel</div>}
       </div>
-      <div style={styles.tiltInfo}>
-        tiltX {nx >= 0 ? '+' : ''}
-        {nx.toFixed(2)} · tiltY {ny >= 0 ? '+' : ''}
-        {ny.toFixed(2)}
+      <div style={styles.footer}>
+        <span style={styles.tiltInfo}>
+          tiltX {nx >= 0 ? '+' : ''}
+          {nx.toFixed(2)} · tiltY {ny >= 0 ? '+' : ''}
+          {ny.toFixed(2)}
+        </span>
+        <span style={styles.hint}>drag · Shift+drag=rotate · Ctrl+drag=scale</span>
       </div>
     </div>
   );
@@ -141,9 +180,18 @@ const styles = {
     color: '#6c7086',
     fontSize: 13,
   },
+  footer: {
+    display: 'flex',
+    gap: 16,
+    alignItems: 'center',
+  },
   tiltInfo: {
     fontSize: 11,
     color: '#6c7086',
     fontFamily: 'monospace',
+  },
+  hint: {
+    fontSize: 10,
+    color: '#45475a',
   },
 } as const;

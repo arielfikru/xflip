@@ -1,10 +1,21 @@
 import type React from 'react';
 import { useStudio } from '../store/context.js';
+import type { PoseKeyframe } from '../store/types.js';
 import { PoseGrid } from './PoseGrid.js';
 
 export function Inspector() {
   const { project, dispatch } = useStudio();
   const layer = project.layers.find((l) => l.id === project.selectedLayerId);
+
+  const activeKf: PoseKeyframe = layer
+    ? (layer.pose.keyframes[project.activePoseCell] ?? {
+        tx: 0,
+        ty: 0,
+        rotationRad: 0,
+        scale: 1,
+        opacity: 1,
+      })
+    : { tx: 0, ty: 0, rotationRad: 0, scale: 1, opacity: 1 };
 
   return (
     <aside style={styles.panel}>
@@ -19,18 +30,11 @@ export function Inspector() {
             <Row label="Blend">
               <select
                 value={layer.blendMode}
-                onChange={(_e) =>
+                onChange={(e) =>
                   dispatch({
-                    type: 'SET_LAYER_POSE_CELL',
+                    type: 'SET_LAYER_BLEND_MODE',
                     layerId: layer.id,
-                    cellIndex: project.activePoseCell,
-                    keyframe: layer.pose.keyframes[project.activePoseCell] ?? {
-                      tx: 0,
-                      ty: 0,
-                      rotationRad: 0,
-                      scale: 1,
-                      opacity: 1,
-                    },
+                    blendMode: e.target.value,
                   })
                 }
                 style={styles.select}
@@ -48,7 +52,13 @@ export function Inspector() {
                 min={0}
                 max={255}
                 value={layer.opacity}
-                onChange={() => {}}
+                onChange={(e) =>
+                  dispatch({
+                    type: 'SET_LAYER_OPACITY',
+                    layerId: layer.id,
+                    opacity: Number(e.target.value),
+                  })
+                }
                 style={styles.range}
               />
               <span style={styles.val}>{Math.round((layer.opacity / 255) * 100)}%</span>
@@ -74,17 +84,29 @@ export function Inspector() {
               <>
                 <p style={styles.poseLabel}>Active cell (click to switch):</p>
                 <PoseGrid />
-                <KeyframeInfo
-                  keyframe={
-                    layer.pose.keyframes[project.activePoseCell] ?? {
-                      tx: 0,
-                      ty: 0,
-                      rotationRad: 0,
-                      scale: 1,
-                      opacity: 1,
-                    }
-                  }
-                />
+                <div style={styles.kfControls}>
+                  <div style={styles.kfSliderRow}>
+                    <span style={styles.kfSliderLabel}>opacity</span>
+                    <input
+                      type="range"
+                      min={0}
+                      max={1}
+                      step={0.01}
+                      value={activeKf.opacity}
+                      onChange={(e) =>
+                        dispatch({
+                          type: 'SET_LAYER_POSE_CELL',
+                          layerId: layer.id,
+                          cellIndex: project.activePoseCell,
+                          keyframe: { ...activeKf, opacity: Number(e.target.value) },
+                        })
+                      }
+                      style={styles.range}
+                    />
+                    <span style={styles.val}>{Math.round(activeKf.opacity * 100)}%</span>
+                  </div>
+                </div>
+                <KeyframeInfo keyframe={activeKf} />
               </>
             )}
           </Section>
@@ -112,11 +134,7 @@ function Row({ label, children }: { label: string; children: React.ReactNode }) 
   );
 }
 
-function KeyframeInfo({
-  keyframe,
-}: {
-  keyframe: { tx: number; ty: number; rotationRad: number; scale: number; opacity: number };
-}) {
+function KeyframeInfo({ keyframe }: { keyframe: PoseKeyframe }) {
   return (
     <div style={styles.kfBox}>
       <KfRow label="tx" value={keyframe.tx.toFixed(1)} unit="px" />
@@ -205,6 +223,9 @@ const styles = {
     marginBottom: 8,
   },
   poseLabel: { fontSize: 11, color: '#6c7086', margin: '0 0 4px' },
+  kfControls: { marginTop: 6 },
+  kfSliderRow: { display: 'flex', alignItems: 'center', gap: 4, marginBottom: 4 },
+  kfSliderLabel: { width: 44, fontSize: 11, color: '#6c7086', flexShrink: 0 },
   kfBox: { background: '#181825', borderRadius: 4, padding: '6px 8px', marginTop: 8 },
   kfRow: {
     display: 'flex',
