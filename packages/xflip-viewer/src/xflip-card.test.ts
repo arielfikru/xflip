@@ -532,6 +532,74 @@ describe('XflipCardElement fetch + decode lifecycle', () => {
     el.remove();
   });
 
+  it('skips tilt updates when prefers-reduced-motion is set', async () => {
+    mockFetchOk(makeFileBytes());
+    const matchMedia = vi.fn((query: string) => ({
+      matches: query.includes('prefers-reduced-motion'),
+      media: query,
+      onchange: null,
+      addListener: () => {},
+      removeListener: () => {},
+      addEventListener: () => {},
+      removeEventListener: () => {},
+      dispatchEvent: () => false,
+    }));
+    vi.stubGlobal('matchMedia', matchMedia);
+    const el = document.createElement(XFLIP_CARD_TAG) as XflipCardElement;
+    const loaded = waitForEvent<CustomEvent<XflipLoadEventDetail>>(el, 'xflip-load');
+    document.body.append(el);
+    el.setAttribute('src', './card.xflip');
+    await loaded;
+    el.getBoundingClientRect = () =>
+      ({
+        left: 0,
+        top: 0,
+        right: 200,
+        bottom: 280,
+        width: 200,
+        height: 280,
+        x: 0,
+        y: 0,
+        toJSON() {
+          return this;
+        },
+      }) as DOMRect;
+    el.tiltMax = 10;
+    el.dispatchEvent(new PointerEvent('pointermove', { clientX: 200, clientY: 0, bubbles: true }));
+    await new Promise((r) => requestAnimationFrame(() => r(null)));
+    expect(el.hasAttribute('data-tilting')).toBe(false);
+    expect(el.style.getPropertyValue('--xflip-tilt-x')).toBe('');
+    el.remove();
+  });
+
+  it('skips tilt updates when NO_FLIP_ANIM flag is set', async () => {
+    mockFetchOk(makeFileBytes({ flags: 0x02 }));
+    const el = document.createElement(XFLIP_CARD_TAG) as XflipCardElement;
+    const loaded = waitForEvent<CustomEvent<XflipLoadEventDetail>>(el, 'xflip-load');
+    document.body.append(el);
+    el.setAttribute('src', './card.xflip');
+    await loaded;
+    el.getBoundingClientRect = () =>
+      ({
+        left: 0,
+        top: 0,
+        right: 200,
+        bottom: 280,
+        width: 200,
+        height: 280,
+        x: 0,
+        y: 0,
+        toJSON() {
+          return this;
+        },
+      }) as DOMRect;
+    el.tiltMax = 10;
+    el.dispatchEvent(new PointerEvent('pointermove', { clientX: 200, clientY: 0, bubbles: true }));
+    await new Promise((r) => requestAnimationFrame(() => r(null)));
+    expect(el.hasAttribute('data-tilting')).toBe(false);
+    el.remove();
+  });
+
   it('cancels in-flight fetch on disconnect', async () => {
     let captured: AbortSignal | null = null;
     vi.stubGlobal(

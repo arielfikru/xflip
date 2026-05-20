@@ -258,6 +258,7 @@ export class XflipCardElement extends HTMLElement {
   };
   #onPointerMove = (ev: PointerEvent): void => {
     if (this.tiltMax <= 0) return;
+    if (this.#animationsDisabled()) return;
     const rect = this.getBoundingClientRect();
     if (rect.width === 0 || rect.height === 0) return;
     const nx = ((ev.clientX - rect.left) / rect.width) * 2 - 1;
@@ -540,6 +541,21 @@ export class XflipCardElement extends HTMLElement {
     for (const v of vars) this.style.removeProperty(v);
     for (const key of this.#hefxDataKeys) delete this.dataset[key];
     this.#hefxDataKeys = [];
+  }
+
+  /**
+   * Returns true when the viewer should skip transient animations. Triggers:
+   *
+   * - The user has set `prefers-reduced-motion: reduce`.
+   * - The loaded file's HEAD has `NO_FLIP_ANIM` (bit 1) set. The spec calls
+   *   the flag out for flip, but treating it as a global "no animation" hint
+   *   matches the principle of least surprise — files that opt out of the
+   *   flip animation almost never want lively tilt either.
+   */
+  #animationsDisabled(): boolean {
+    if (this.#file && (this.#file.head.flags & HEAD_FLAG_NO_FLIP_ANIM) !== 0) return true;
+    if (typeof window === 'undefined' || typeof window.matchMedia !== 'function') return false;
+    return window.matchMedia('(prefers-reduced-motion: reduce)').matches;
   }
 
   #scheduleTilt(): void {
