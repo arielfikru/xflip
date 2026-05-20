@@ -5,8 +5,8 @@
 
 **Last updated:** 2026-05-20
 **Current phase:** P9 (pose-rig studio)
-**Current task:** P9.7 (sample card demo: head-turn 3×3 pose with 3+ layers)
-**Status:** P9.1 (RFC), P9.2 (core pOse codec), P9.3 (studio scaffold) done. P6.2 deferred per user decision — P9 studio takes priority. `apps/playground` ships a Vite + React app that consumes `@xflip/react`: source-aliased workspace deps (HMR edge-to-edge), generated fixtures via `scripts/build-fixtures.mjs` (synthesizes solid-color PNGs in pure Node + zlib, then encodes flat + layered `.xflip` files via `@xflip/core`), a dropdown to pick between samples, a file-input for uploading custom `.xflip` (revokes blob URLs on replacement), a tilt-max slider, Flip + Enable-gyroscope buttons that call viewer methods through a forwarded ref, and a sidebar showing `useXflip` status + decoded JSON. Verified visually in Chromium: blue front renders, `xflip-load` fires (`v1.1 · 240×336`). Next: P6.2 expands the sample gallery and polishes the layout. `<XflipCard>` test suite widened to cover tiltMax prop updates, className/style/hidden/aria-label forwarding (React's custom-element class-attr heuristic accommodated), element identity across `src` changes, ref detach on unmount, callback-ref clearing, and listener swap when `onLoad` reference changes. Suite at 392 tests (+6); biome + typecheck clean. Next: P5.6 ships the package README with copy-paste examples for `<XflipCard>` and `useXflip`.
+**Current task:** P9 COMPLETE
+**Status:** All P9.0–P9.7 tasks shipped. Full pose-rig studio at apps/studio; sample card at sample-data/head-turn.xflip. P6.2 remains deferred. `apps/playground` ships a Vite + React app that consumes `@xflip/react`: source-aliased workspace deps (HMR edge-to-edge), generated fixtures via `scripts/build-fixtures.mjs` (synthesizes solid-color PNGs in pure Node + zlib, then encodes flat + layered `.xflip` files via `@xflip/core`), a dropdown to pick between samples, a file-input for uploading custom `.xflip` (revokes blob URLs on replacement), a tilt-max slider, Flip + Enable-gyroscope buttons that call viewer methods through a forwarded ref, and a sidebar showing `useXflip` status + decoded JSON. Verified visually in Chromium: blue front renders, `xflip-load` fires (`v1.1 · 240×336`). Next: P6.2 expands the sample gallery and polishes the layout. `<XflipCard>` test suite widened to cover tiltMax prop updates, className/style/hidden/aria-label forwarding (React's custom-element class-attr heuristic accommodated), element identity across `src` changes, ref detach on unmount, callback-ref clearing, and listener swap when `onLoad` reference changes. Suite at 392 tests (+6); biome + typecheck clean. Next: P5.6 ships the package README with copy-paste examples for `<XflipCard>` and `useXflip`.
 
 **P4.6 status (history):** CI `cli-smoke` job builds the CLI bin and drives `scripts/cli-smoke.mjs` end-to-end on ubuntu / macOS / windows (help, create, inspect, validate, extract, layers add, validate of layered output, META round-trip, unknown-command exit-2). Local: 9/9 checks pass.
 
@@ -89,7 +89,7 @@ Mark each phase done only when its AGENTS.md DoD is fully met.
 | P6    | playground        | ⏸️ PAUSED  | -         | -         | Deferred; P9 studio prioritized |
 | P7    | docs              | ☐ TODO   | -         | -         | |
 | P8    | launch            | ☐ TODO   | -         | -         | Requires user OK |
-| P9    | pose-rig studio   | 🔄 IN PROGRESS | 2026-05-20 | -  | P9.1-9.3 done (RFC + core + scaffold) |
+| P9    | pose-rig studio   | ✅ DONE | 2026-05-20 | 2026-05-20 | P9.0–9.7 shipped; studio at apps/studio; sample at sample-data/ |
 
 ---
 
@@ -103,6 +103,7 @@ Append rows as tasks complete. Format:
 
 | Date       | Task   | Description                         | Commit   | Notes |
 | ---------- | ------ | ----------------------------------- | -------- | ----- |
+| 2026-05-20 | P9.7   | Sample card `head-turn.xflip`: 3-layer 3×3 pose rig (background static, head green circle ±30px tx ±15px ty, shadow dim circle opposite 50% shift + 20px drop); script at apps/studio/scripts/gen-sample.mjs | (this) | 6623 bytes, decodes v1.2 clean |
 | 2026-05-20 | P9.6   | IndexedDB autosave: db.ts (saveProject/loadProject/clearProject with ArrayBuffer blobs); context debounced autosave 1.5 s; mount restore; saveStatus in TopBar; RESET clears DB | (this) | |
 | 2026-05-20 | P9.5   | Export codec selector (WebP/AVIF/PNG) + quality slider (q10–100); re-encode layers through offscreen canvas at project dimensions before building xflip; exporting state + disabled button | (this) | |
 | 2026-05-20 | P9.4   | Full affine pose editing: Shift+drag=rotate (atan2), Ctrl+drag=scale (exp curve), cursor per mode; Inspector blend/opacity wired (SET_LAYER_BLEND_MODE/OPACITY); per-cell opacity slider in pose section | f5837c9 | all 5 kf fields live-editable |
@@ -285,7 +286,7 @@ of `@xflip/viewer`).
 | P9.4    | Full affine editing: rotation + scale + opacity per cell          | ✅      |
 | P9.5    | Export polish: codec selector (WebP/AVIF), quality knob          | ✅      |
 | P9.6    | IndexedDB autosave + project JSON import/export                  | ✅      |
-| P9.7    | Sample card demo: head-turn 3×3 pose with 3+ layers              | ☐      |
+| P9.7    | Sample card demo: head-turn 3×3 pose with 3+ layers              | ✅      |
 
 ## Phase 6+ Task Breakdown
 
