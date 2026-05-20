@@ -5,7 +5,7 @@
 
 **Last updated:** 2026-05-20
 **Current phase:** P9 (pose-rig studio)
-**Current task:** P9.4 (drag-to-edit full affine: rotation + scale + opacity in canvas)
+**Current task:** P9.5 (export polish: codec selector WebP/AVIF, quality knob)
 **Status:** P9.1 (RFC), P9.2 (core pOse codec), P9.3 (studio scaffold) done. P6.2 deferred per user decision — P9 studio takes priority. `apps/playground` ships a Vite + React app that consumes `@xflip/react`: source-aliased workspace deps (HMR edge-to-edge), generated fixtures via `scripts/build-fixtures.mjs` (synthesizes solid-color PNGs in pure Node + zlib, then encodes flat + layered `.xflip` files via `@xflip/core`), a dropdown to pick between samples, a file-input for uploading custom `.xflip` (revokes blob URLs on replacement), a tilt-max slider, Flip + Enable-gyroscope buttons that call viewer methods through a forwarded ref, and a sidebar showing `useXflip` status + decoded JSON. Verified visually in Chromium: blue front renders, `xflip-load` fires (`v1.1 · 240×336`). Next: P6.2 expands the sample gallery and polishes the layout. `<XflipCard>` test suite widened to cover tiltMax prop updates, className/style/hidden/aria-label forwarding (React's custom-element class-attr heuristic accommodated), element identity across `src` changes, ref detach on unmount, callback-ref clearing, and listener swap when `onLoad` reference changes. Suite at 392 tests (+6); biome + typecheck clean. Next: P5.6 ships the package README with copy-paste examples for `<XflipCard>` and `useXflip`.
 
 **P4.6 status (history):** CI `cli-smoke` job builds the CLI bin and drives `scripts/cli-smoke.mjs` end-to-end on ubuntu / macOS / windows (help, create, inspect, validate, extract, layers add, validate of layered output, META round-trip, unknown-command exit-2). Local: 9/9 checks pass.
@@ -103,6 +103,7 @@ Append rows as tasks complete. Format:
 
 | Date       | Task   | Description                         | Commit   | Notes |
 | ---------- | ------ | ----------------------------------- | -------- | ----- |
+| 2026-05-20 | P9.4   | Full affine pose editing: Shift+drag=rotate (atan2), Ctrl+drag=scale (exp curve), cursor per mode; Inspector blend/opacity wired (SET_LAYER_BLEND_MODE/OPACITY); per-cell opacity slider in pose section | f5837c9 | all 5 kf fields live-editable |
 | 2026-05-20 | P9.3   | `apps/studio` scaffold: Vite + React pose-rig authoring tool; LayerPanel (file import, pose toggle), Canvas (drag tx/ty per cell), PoseGrid (3×3 cell selector), Inspector (blend/opacity/keyframe readout), TopBar (.xflip export + reset) | 6038daa | biome/lint clean; all files ESM strict |
 | 2026-05-20 | P9.2   | Viewer integration: `#poseLayers` tracking, `#applyPoseLayers(nx,ny)` per RAF tick, CSS `data-has-pose` bypasses parallax vars | e5b5a7a | viewer typecheck clean |
 | 2026-05-20 | P9.1   | `pOse` chunk codec in xflip-core v1.2: `parsePoseChunk`, `serializePoseChunk`, `samplePose` bilinear, `identityPose`; 25 tests; types + index exports | 8310539 | zero allocs on hot path; PoseGridSize = 3\|5 |
@@ -279,7 +280,7 @@ of `@xflip/viewer`).
 | P9.1    | `pOse` chunk codec in xflip-core v1.2 (`samplePose`, tests)     | ✅      |
 | P9.2    | Viewer integration: pose layer transforms per RAF tick           | ✅      |
 | P9.3    | `apps/studio` scaffold: all panels, export pipeline              | ✅      |
-| P9.4    | Full affine editing: rotation + scale + opacity per cell          | ☐      |
+| P9.4    | Full affine editing: rotation + scale + opacity per cell          | ✅      |
 | P9.5    | Export polish: codec selector (WebP/AVIF), quality knob          | ☐      |
 | P9.6    | IndexedDB autosave + project JSON import/export                  | ☐      |
 | P9.7    | Sample card demo: head-turn 3×3 pose with 3+ layers              | ☐      |
