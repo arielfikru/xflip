@@ -45,7 +45,7 @@ export function Canvas() {
       startY: e.clientY,
       canvasCX: cx,
       canvasCY: cy,
-      startAngle: Math.atan2(e.clientY - cy, e.clientX - cx),
+      startAngle: 0, // unused for rotateY; kept for type compat
       mode,
       baseKf: {
         tx: kf.tx,
@@ -73,11 +73,8 @@ export function Canvas() {
     const dy = e.clientY - dragging.startY;
     let newKf: PoseKeyframe;
     if (dragging.mode === 'rotate') {
-      const currentAngle = Math.atan2(e.clientY - dragging.canvasCY, e.clientX - dragging.canvasCX);
-      newKf = {
-        ...existing,
-        rotationRad: dragging.baseKf.rotationRad + (currentAngle - dragging.startAngle),
-      };
+      // rotateY: horizontal drag maps to Y-axis rotation (right = positive = face turns right)
+      newKf = { ...existing, rotationRad: dragging.baseKf.rotationRad + dx / 150 };
     } else if (dragging.mode === 'scale') {
       newKf = { ...existing, scale: Math.max(0.01, dragging.baseKf.scale * Math.exp(-dy / 200)) };
     } else {
@@ -121,7 +118,7 @@ export function Canvas() {
                 opacity: (layer.opacity / 255) * (kf?.opacity ?? 1),
                 mixBlendMode: layer.blendMode as React.CSSProperties['mixBlendMode'],
                 transform: kf
-                  ? `translate3d(${kf.tx}px,${kf.ty}px,0) rotate(${kf.rotationRad}rad) scale(${kf.scale})`
+                  ? `perspective(800px) translate3d(${kf.tx}px,${kf.ty}px,0) rotateY(${kf.rotationRad}rad) scale(${kf.scale})`
                   : 'none',
                 outline: isSelected ? '2px solid #89b4fa' : 'none',
                 cursor: dragging?.layerId === layer.id ? cursorForMode(dragging.mode) : 'grab',
@@ -138,7 +135,7 @@ export function Canvas() {
           {nx.toFixed(2)} · tiltY {ny >= 0 ? '+' : ''}
           {ny.toFixed(2)}
         </span>
-        <span style={styles.hint}>drag · Shift+drag=rotate · Ctrl+drag=scale</span>
+        <span style={styles.hint}>drag=move · Shift+drag=rotateY · Ctrl+drag=scale</span>
       </div>
     </div>
   );

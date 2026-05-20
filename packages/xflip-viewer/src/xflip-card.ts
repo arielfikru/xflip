@@ -570,8 +570,9 @@ export class XflipCardElement extends HTMLElement {
   ): void {
     const kf = samplePose(pose, nx, ny);
     el.style.transform = [
+      'perspective(800px)',
       `translate3d(${kf.tx.toFixed(2)}px, ${kf.ty.toFixed(2)}px, 0)`,
-      `rotate(${kf.rotationRad.toFixed(4)}rad)`,
+      `rotateY(${kf.rotationRad.toFixed(4)}rad)`,
       `scale(${kf.scale.toFixed(4)})`,
     ].join(' ');
     el.style.opacity = (baseOpacity * kf.opacity).toFixed(3);
