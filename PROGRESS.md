@@ -18,7 +18,13 @@
 
 ## Quick Resume Pointer
 
-**Next Task:** `P9.4` — Full affine keyframe editing in canvas: rotate
+**Next Task:** `P7` — Documentation site (or continue P6 playground polish)
+
+**P9 post-ship additions:**
+- Preview modal: `PreviewModal.tsx` encodes project to xflip blob → loads in `<xflip-card tilt-max={30}>` web component; TopBar "Preview" button (green) triggers it; backdrop+Escape close.
+- 3D rotateY: canvas drag `Shift+drag` → rotateY (dx/150 rad); viewer `#applyPoseToElement` uses `perspective(800px) rotateY()` inline to bypass clip-path 3D-context flattening.
+
+**Next Task (was):** `P9.4` — Full affine keyframe editing in canvas: rotate
 layer via modifier+drag or dedicated handles; scale via pinch-style handle;
 opacity slider in Inspector wired to active pose cell; all five transform
 fields (tx, ty, rotationRad, scale, opacity) live-editable per-cell.
@@ -103,6 +109,7 @@ Append rows as tasks complete. Format:
 
 | Date       | Task   | Description                         | Commit   | Notes |
 | ---------- | ------ | ----------------------------------- | -------- | ----- |
+| 2026-05-20 | P9.x   | Preview modal: encode project → xflip blob → `<xflip-card tilt-max={30}>`; TopBar Preview button; 3D rotateY fix (perspective inline in transform) | (latest) | post-P9 additions |
 | 2026-05-20 | P9.7   | Sample card `head-turn.xflip`: 3-layer 3×3 pose rig (background static, head green circle ±30px tx ±15px ty, shadow dim circle opposite 50% shift + 20px drop); script at apps/studio/scripts/gen-sample.mjs | (this) | 6623 bytes, decodes v1.2 clean |
 | 2026-05-20 | P9.6   | IndexedDB autosave: db.ts (saveProject/loadProject/clearProject with ArrayBuffer blobs); context debounced autosave 1.5 s; mount restore; saveStatus in TopBar; RESET clears DB | (this) | |
 | 2026-05-20 | P9.5   | Export codec selector (WebP/AVIF/PNG) + quality slider (q10–100); re-encode layers through offscreen canvas at project dimensions before building xflip; exporting state + disabled button | (this) | |
