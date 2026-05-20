@@ -1,0 +1,66 @@
+{
+  "name": "@xflip/react",
+  "version": "0.0.0",
+  "description": "React wrapper around the <xflip-card> web component",
+  "license": "MIT",
+  "author": "arielfikru <arielfikrua@gmail.com>",
+  "repository": {
+    "type": "git",
+    "url": "git+ssh://git@github.com/arielfikru/xflip.git",
+    "directory": "packages/xflip-react"
+  },
+  "homepage": "https://github.com/arielfikru/xflip/tree/main/packages/xflip-react#readme",
+  "bugs": {
+    "url": "https://github.com/arielfikru/xflip/issues"
+  },
+  "keywords": [
+    "xflip",
+    "react",
+    "trading-card",
+    "holographic",
+    "web-component"
+  ],
+  "type": "module",
+  "sideEffects": false,
+  "main": "./dist/index.js",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    },
+    "./package.json": "./package.json"
+  },
+  "files": [
+    "dist",
+    "README.md",
+    "LICENSE"
+  ],
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "build": "tsup",
+    "dev": "tsup --watch",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run --passWithNoTests",
+    "test:watch": "vitest",
+    "test:coverage": "vitest run --coverage --passWithNoTests",
+    "clean": "rm -rf dist coverage *.tsbuildinfo"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
+  "dependencies": {
+    "@xflip/viewer": "workspace:*"
+  },
+  "peerDependencies": {
+    "react": ">=18.0.0"
+  },
+  "devDependencies": {
+    "@types/react": "^18.3.0",
+    "happy-dom": "^15.11.0",
+    "react": "^18.3.0"
+  }
+}
