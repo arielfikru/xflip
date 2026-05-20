@@ -1,5 +1,11 @@
 // @vitest-environment happy-dom
-import { encode, type XflipFile } from '@xflip/core';
+import {
+  encode,
+  type XflipFile,
+  type XflipHefx,
+  type XflipLayer,
+  type XflipLayerChunk,
+} from '@xflip/core';
 import { afterEach, beforeAll, describe, expect, it, vi } from 'vitest';
 import {
   defineXflipCard,
@@ -23,6 +29,44 @@ function makeFileBytes(overrides: { flags?: number } = {}): Uint8Array {
     },
     front: new Uint8Array([0x89, 0x50, 0x4e, 0x47]),
     back: new Uint8Array([0x89, 0x50, 0x4e, 0x47]),
+  };
+  return encode(file);
+}
+
+function makeLayer(over: Partial<XflipLayer> = {}): XflipLayer {
+  return {
+    layerId: over.layerId ?? 0,
+    format: over.format ?? 'png',
+    blendMode: over.blendMode ?? 'screen',
+    effectType: over.effectType ?? 'holographic',
+    opacity: over.opacity ?? 255,
+    zOrder: over.zOrder ?? 0,
+    response: over.response ?? {},
+    imageData: over.imageData ?? new Uint8Array([0x89, 0x50, 0x4e, 0x47]),
+  };
+}
+
+function makeLayeredFileBytes(opts: {
+  front?: XflipLayerChunk;
+  back?: XflipLayerChunk;
+  effects?: XflipHefx;
+}): Uint8Array {
+  const file: XflipFile = {
+    versionMajor: 1,
+    versionMinor: 1,
+    head: {
+      width: 100,
+      height: 140,
+      frontFormat: 'png',
+      backFormat: 'png',
+      flipAxis: 'horizontal',
+      flags: 0,
+    },
+    front: new Uint8Array([0x89, 0x50, 0x4e, 0x47]),
+    back: new Uint8Array([0x89, 0x50, 0x4e, 0x47]),
+    ...(opts.front ? { frontLayers: opts.front } : {}),
+    ...(opts.back ? { backLayers: opts.back } : {}),
+    ...(opts.effects ? { effects: opts.effects } : {}),
   };
   return encode(file);
 }
@@ -365,6 +409,126 @@ describe('XflipCardElement fetch + decode lifecycle', () => {
     el.dispatchEvent(new PointerEvent('pointermove', { clientX: 50, clientY: 50, bubbles: true }));
     await new Promise((r) => requestAnimationFrame(() => r(null)));
     expect(el.hasAttribute('data-tilting')).toBe(false);
+    el.remove();
+  });
+
+  it('renders front/back layers sorted by zOrder with blend + opacity', async () => {
+    const layers: XflipLayerChunk = {
+      version: 1,
+      flags: 0,
+      layers: [
+        makeLayer({ layerId: 1, zOrder: 5, blendMode: 'screen', opacity: 128 }),
+        makeLayer({ layerId: 2, zOrder: 1, blendMode: 'soft_light', opacity: 255 }),
+      ],
+    };
+    mockFetchOk(makeLayeredFileBytes({ front: layers, back: layers }));
+    const el = document.createElement(XFLIP_CARD_TAG) as XflipCardElement;
+    const loaded = waitForEvent<CustomEvent<XflipLoadEventDetail>>(el, 'xflip-load');
+    document.body.append(el);
+    el.setAttribute('src', './layered.xflip');
+    await loaded;
+    const frontLayers = el.shadowRoot?.querySelectorAll(
+      '.layers.front img.layer',
+    ) as NodeListOf<HTMLImageElement>;
+    expect(frontLayers).toHaveLength(2);
+    // Ascending zOrder ⇒ layerId 2 painted first.
+    expect(frontLayers[0].dataset.layerId).toBe('2');
+    expect(frontLayers[0].dataset.blendMode).toBe('soft_light');
+    expect(frontLayers[0].style.mixBlendMode).toBe('soft-light');
+    expect(frontLayers[0].style.opacity).toBe('1.000');
+    expect(frontLayers[1].dataset.layerId).toBe('1');
+    expect(frontLayers[1].style.mixBlendMode).toBe('screen');
+    expect(frontLayers[1].style.opacity).toBe('0.502');
+    expect(frontLayers[1].src).toMatch(/^blob:/);
+    const backLayers = el.shadowRoot?.querySelectorAll('.layers.back img.layer');
+    expect(backLayers).toHaveLength(2);
+    el.remove();
+  });
+
+  it('exposes layer response params as CSS vars and data-attrs', async () => {
+    const layers: XflipLayerChunk = {
+      version: 1,
+      flags: 0,
+      layers: [
+        makeLayer({
+          effectType: 'holographic',
+          response: {
+            input_source: 'tilt',
+            response_axis: 'xy',
+            response_curve: 'ease',
+            intensity: 0.8,
+            offset_max_x: 12,
+            offset_max_y: 8,
+            rotation_max: 15,
+            phase_offset: 0.25,
+            frequency: 2,
+          },
+        }),
+      ],
+    };
+    mockFetchOk(makeLayeredFileBytes({ front: layers }));
+    const el = document.createElement(XFLIP_CARD_TAG) as XflipCardElement;
+    const loaded = waitForEvent<CustomEvent<XflipLoadEventDetail>>(el, 'xflip-load');
+    document.body.append(el);
+    el.setAttribute('src', './layered.xflip');
+    await loaded;
+    const layer = el.shadowRoot?.querySelector('.layers.front img.layer') as HTMLImageElement;
+    expect(layer.dataset.effectType).toBe('holographic');
+    expect(layer.dataset.inputSource).toBe('tilt');
+    expect(layer.dataset.responseAxis).toBe('xy');
+    expect(layer.dataset.responseCurve).toBe('ease');
+    expect(layer.style.getPropertyValue('--xflip-layer-intensity')).toBe('0.8');
+    expect(layer.style.getPropertyValue('--xflip-layer-offset-x')).toBe('12px');
+    expect(layer.style.getPropertyValue('--xflip-layer-offset-y')).toBe('8px');
+    expect(layer.style.getPropertyValue('--xflip-layer-rotation-max')).toBe('15deg');
+    expect(layer.style.getPropertyValue('--xflip-layer-phase-offset')).toBe('0.25');
+    expect(layer.style.getPropertyValue('--xflip-layer-frequency')).toBe('2');
+    el.remove();
+  });
+
+  it('applies hEfx as host CSS vars and data-attrs', async () => {
+    mockFetchOk(
+      makeLayeredFileBytes({
+        effects: {
+          tilt_sensitivity: 1.2,
+          tilt_max_angle: 12,
+          perspective: 1500,
+          ambient_intensity: 0.6,
+          card_material: 'holographic',
+          surface_finish: 'linen',
+        },
+      }),
+    );
+    const el = document.createElement(XFLIP_CARD_TAG) as XflipCardElement;
+    const loaded = waitForEvent<CustomEvent<XflipLoadEventDetail>>(el, 'xflip-load');
+    document.body.append(el);
+    el.setAttribute('src', './hefx.xflip');
+    await loaded;
+    expect(el.style.getPropertyValue('--xflip-tilt-sensitivity')).toBe('1.2');
+    expect(el.style.getPropertyValue('--xflip-tilt-max-angle')).toBe('12deg');
+    expect(el.style.getPropertyValue('--xflip-perspective')).toBe('1500px');
+    expect(el.style.getPropertyValue('--xflip-ambient-intensity')).toBe('0.6');
+    expect(el.dataset.cardMaterial).toBe('holographic');
+    expect(el.dataset.surfaceFinish).toBe('linen');
+    el.remove();
+  });
+
+  it('clears layers and hEfx vars when src is removed', async () => {
+    const layers: XflipLayerChunk = {
+      version: 1,
+      flags: 0,
+      layers: [makeLayer()],
+    };
+    mockFetchOk(makeLayeredFileBytes({ front: layers, effects: { card_material: 'foil' } }));
+    const el = document.createElement(XFLIP_CARD_TAG) as XflipCardElement;
+    const loaded = waitForEvent<CustomEvent<XflipLoadEventDetail>>(el, 'xflip-load');
+    document.body.append(el);
+    el.setAttribute('src', './layered.xflip');
+    await loaded;
+    expect(el.shadowRoot?.querySelectorAll('.layers.front img.layer')).toHaveLength(1);
+    el.removeAttribute('src');
+    expect(el.shadowRoot?.querySelectorAll('.layers.front img.layer')).toHaveLength(0);
+    expect(el.dataset.cardMaterial).toBeUndefined();
     el.remove();
   });
 

@@ -1,4 +1,12 @@
-import { decode, type ImageFormat, type XflipFile } from '@xflip/core';
+import {
+  type BlendMode,
+  decode,
+  type ImageFormat,
+  type XflipFile,
+  type XflipHefx,
+  type XflipLayer,
+  type XflipLayerChunk,
+} from '@xflip/core';
 
 /**
  * Tag name registered by {@link defineXflipCard} and {@link XflipCardElement.register}.
@@ -43,6 +51,27 @@ function makeBlobUrl(bytes: Uint8Array, format: ImageFormat): string {
   // Uint8Array<ArrayBufferLike> is structurally compatible at runtime.
   return URL.createObjectURL(new Blob([bytes as BlobPart], { type: mime }));
 }
+
+/**
+ * Map xflip blend mode names to CSS `mix-blend-mode` values per spec v0.2
+ * Appendix B. `add` maps to `plus-lighter` (modern equivalent). `custom`
+ * has no CSS analog — fall back to `normal` and rely on `data-blend-mode`
+ * for selector-based styling.
+ */
+const BLEND_MODE_CSS: Record<BlendMode, string> = {
+  normal: 'normal',
+  multiply: 'multiply',
+  screen: 'screen',
+  overlay: 'overlay',
+  add: 'plus-lighter',
+  color_dodge: 'color-dodge',
+  color_burn: 'color-burn',
+  soft_light: 'soft-light',
+  hard_light: 'hard-light',
+  difference: 'difference',
+  luminosity: 'luminosity',
+  custom: 'normal',
+};
 
 const IMAGE_MIME: Record<ImageFormat, string> = {
   png: 'image/png',
@@ -114,6 +143,23 @@ const TEMPLATE_HTML = `
   }
   .face.back { transform: rotateY(180deg); }
   .face[hidden] { display: none; }
+  .layers {
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    backface-visibility: hidden;
+    -webkit-backface-visibility: hidden;
+  }
+  .layers.back { transform: rotateY(180deg); }
+  .layer {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+    display: block;
+    will-change: transform, opacity;
+  }
   .status {
     position: absolute;
     inset: 0;
@@ -132,7 +178,9 @@ const TEMPLATE_HTML = `
   <div class="tilt" part="tilt">
     <div class="flipper" part="flipper" data-face="front">
       <img class="face front" part="face face-front" alt="" hidden />
+      <div class="layers front" part="layers layers-front"></div>
       <img class="face back" part="face face-back" alt="" hidden />
+      <div class="layers back" part="layers layers-back"></div>
     </div>
   </div>
 </div>
@@ -191,6 +239,8 @@ export class XflipCardElement extends HTMLElement {
   #flipper: HTMLDivElement;
   #frontImg: HTMLImageElement;
   #backImg: HTMLImageElement;
+  #frontLayersBox: HTMLDivElement;
+  #backLayersBox: HTMLDivElement;
   #status: HTMLDivElement;
   #abort: AbortController | null = null;
   #loadToken = 0;
@@ -199,6 +249,8 @@ export class XflipCardElement extends HTMLElement {
     front: null,
     back: null,
   };
+  #layerBlobUrls: string[] = [];
+  #hefxDataKeys: string[] = [];
   #tiltRaf = 0;
   #tiltPending: { x: number; y: number } | null = null;
   #onClick = (): void => {
@@ -234,6 +286,8 @@ export class XflipCardElement extends HTMLElement {
     this.#flipper = root.querySelector('.flipper') as HTMLDivElement;
     this.#frontImg = root.querySelector('.face.front') as HTMLImageElement;
     this.#backImg = root.querySelector('.face.back') as HTMLImageElement;
+    this.#frontLayersBox = root.querySelector('.layers.front') as HTMLDivElement;
+    this.#backLayersBox = root.querySelector('.layers.back') as HTMLDivElement;
     this.#status = root.querySelector('.status') as HTMLDivElement;
     this.#setStatus(null);
   }
@@ -349,6 +403,9 @@ export class XflipCardElement extends HTMLElement {
 
   #adoptFile(file: XflipFile): void {
     this.#revokeBlobs();
+    this.#frontLayersBox.replaceChildren();
+    this.#backLayersBox.replaceChildren();
+    this.#clearHefxVars();
     this.#file = file;
     this.#blobUrls.front = makeBlobUrl(file.front, file.head.frontFormat);
     this.#blobUrls.back = makeBlobUrl(file.back, file.head.backFormat);
@@ -364,6 +421,85 @@ export class XflipCardElement extends HTMLElement {
     this.#currentFace =
       (file.head.flags & HEAD_FLAG_DEFAULT_BACK) === HEAD_FLAG_DEFAULT_BACK ? 'back' : 'front';
     this.#flipper.dataset.face = this.#currentFace;
+
+    if (file.frontLayers) this.#renderLayers(this.#frontLayersBox, file.frontLayers);
+    if (file.backLayers) this.#renderLayers(this.#backLayersBox, file.backLayers);
+    if (file.effects) this.#applyHefx(file.effects);
+  }
+
+  #renderLayers(host: HTMLDivElement, chunk: XflipLayerChunk): void {
+    // Spec §5.6: lower zOrder = drawn first (bottom). DOM order paints
+    // earlier siblings under later ones, so ascending zOrder is correct.
+    const sorted = [...chunk.layers].sort((a, b) => a.zOrder - b.zOrder);
+    for (const layer of sorted) {
+      host.append(this.#buildLayer(layer));
+    }
+  }
+
+  #buildLayer(layer: XflipLayer): HTMLImageElement {
+    const img = document.createElement('img');
+    img.className = 'layer';
+    img.setAttribute('part', 'layer');
+    img.alt = '';
+    img.decoding = 'async';
+    const url = makeBlobUrl(layer.imageData, layer.format);
+    this.#layerBlobUrls.push(url);
+    img.src = url;
+    img.dataset.layerId = String(layer.layerId);
+    img.dataset.blendMode = layer.blendMode;
+    img.dataset.effectType = layer.effectType;
+    img.style.opacity = (layer.opacity / 255).toFixed(3);
+    img.style.mixBlendMode = BLEND_MODE_CSS[layer.blendMode];
+    this.#applyLayerResponse(img, layer);
+    return img;
+  }
+
+  #applyLayerResponse(img: HTMLImageElement, layer: XflipLayer): void {
+    const r = layer.response;
+    if (r.input_source) img.dataset.inputSource = r.input_source;
+    if (r.response_axis) img.dataset.responseAxis = r.response_axis;
+    if (r.response_curve) img.dataset.responseCurve = r.response_curve;
+    if (typeof r.intensity === 'number') {
+      img.style.setProperty('--xflip-layer-intensity', r.intensity.toString());
+    }
+    if (typeof r.offset_max_x === 'number') {
+      img.style.setProperty('--xflip-layer-offset-x', `${r.offset_max_x}px`);
+    }
+    if (typeof r.offset_max_y === 'number') {
+      img.style.setProperty('--xflip-layer-offset-y', `${r.offset_max_y}px`);
+    }
+    if (typeof r.rotation_max === 'number') {
+      img.style.setProperty('--xflip-layer-rotation-max', `${r.rotation_max}deg`);
+    }
+    if (typeof r.phase_offset === 'number') {
+      img.style.setProperty('--xflip-layer-phase-offset', r.phase_offset.toString());
+    }
+    if (typeof r.frequency === 'number') {
+      img.style.setProperty('--xflip-layer-frequency', r.frequency.toString());
+    }
+  }
+
+  #applyHefx(hefx: XflipHefx): void {
+    if (typeof hefx.tilt_sensitivity === 'number') {
+      this.style.setProperty('--xflip-tilt-sensitivity', hefx.tilt_sensitivity.toString());
+    }
+    if (typeof hefx.tilt_max_angle === 'number') {
+      this.style.setProperty('--xflip-tilt-max-angle', `${hefx.tilt_max_angle}deg`);
+    }
+    if (typeof hefx.perspective === 'number') {
+      this.style.setProperty('--xflip-perspective', `${hefx.perspective}px`);
+    }
+    if (typeof hefx.ambient_intensity === 'number') {
+      this.style.setProperty('--xflip-ambient-intensity', hefx.ambient_intensity.toString());
+    }
+    if (hefx.card_material) {
+      this.dataset.cardMaterial = hefx.card_material;
+      this.#hefxDataKeys.push('cardMaterial');
+    }
+    if (hefx.surface_finish) {
+      this.dataset.surfaceFinish = hefx.surface_finish;
+      this.#hefxDataKeys.push('surfaceFinish');
+    }
   }
 
   #resetFile(): void {
@@ -373,6 +509,9 @@ export class XflipCardElement extends HTMLElement {
     this.#frontImg.removeAttribute('src');
     this.#backImg.hidden = true;
     this.#backImg.removeAttribute('src');
+    this.#frontLayersBox.replaceChildren();
+    this.#backLayersBox.replaceChildren();
+    this.#clearHefxVars();
     this.removeAttribute('data-no-anim');
     this.#currentFace = 'front';
     this.#flipper.dataset.face = 'front';
@@ -387,6 +526,20 @@ export class XflipCardElement extends HTMLElement {
       URL.revokeObjectURL(this.#blobUrls.back);
       this.#blobUrls.back = null;
     }
+    for (const url of this.#layerBlobUrls) URL.revokeObjectURL(url);
+    this.#layerBlobUrls = [];
+  }
+
+  #clearHefxVars(): void {
+    const vars = [
+      '--xflip-tilt-sensitivity',
+      '--xflip-tilt-max-angle',
+      '--xflip-perspective',
+      '--xflip-ambient-intensity',
+    ];
+    for (const v of vars) this.style.removeProperty(v);
+    for (const key of this.#hefxDataKeys) delete this.dataset[key];
+    this.#hefxDataKeys = [];
   }
 
   #scheduleTilt(): void {
