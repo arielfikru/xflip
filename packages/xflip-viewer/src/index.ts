@@ -4,6 +4,7 @@ export {
   XFLIP_CARD_TAG,
   XflipCardElement,
   type XflipErrorEventDetail,
+  type XflipFace,
   type XflipLoadEventDetail,
 } from './xflip-card.js';
 

@@ -1,4 +1,4 @@
-import { decode, type XflipFile } from '@xflip/core';
+import { decode, type ImageFormat, type XflipFile } from '@xflip/core';
 
 /**
  * Tag name registered by {@link defineXflipCard} and {@link XflipCardElement.register}.
@@ -18,6 +18,38 @@ export interface XflipLoadEventDetail {
 export interface XflipErrorEventDetail {
   error: Error;
 }
+
+/** Which face is currently presented on the stage. */
+export type XflipFace = 'front' | 'back';
+
+/**
+ * Bit 0 of `XflipHead.flags` (DEFAULT_BACK) — when set, the card opens
+ * showing the back face. Spec v0.2 §4.1.
+ */
+const HEAD_FLAG_DEFAULT_BACK = 0x01;
+
+/**
+ * MIME types for the formats `<img>` can render natively. Unknown or
+ * non-image formats (`raw`, `custom`, future codecs) fall back to
+ * `application/octet-stream`, which most browsers refuse to render — the
+ * fallback layer paints nothing in that case.
+ */
+function makeBlobUrl(bytes: Uint8Array, format: ImageFormat): string {
+  const mime = IMAGE_MIME[format] ?? 'application/octet-stream';
+  // BlobPart in lib.dom narrows ArrayBufferView to ArrayBuffer-backed views;
+  // Uint8Array<ArrayBufferLike> is structurally compatible at runtime.
+  return URL.createObjectURL(new Blob([bytes as BlobPart], { type: mime }));
+}
+
+const IMAGE_MIME: Record<ImageFormat, string> = {
+  png: 'image/png',
+  jpeg: 'image/jpeg',
+  webp: 'image/webp',
+  avif: 'image/avif',
+  jxl: 'image/jxl',
+  raw: 'application/octet-stream',
+  custom: 'application/octet-stream',
+};
 
 /**
  * Observed attributes for `<xflip-card>`.
@@ -43,6 +75,15 @@ const TEMPLATE_HTML = `
     height: 100%;
     position: relative;
   }
+  .face {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+    display: block;
+  }
+  .face[hidden] { display: none; }
   .status {
     position: absolute;
     inset: 0;
@@ -54,7 +95,9 @@ const TEMPLATE_HTML = `
   }
   .status[hidden] { display: none; }
 </style>
-<div class="stage" part="stage"></div>
+<div class="stage" part="stage">
+  <img class="face" part="face" alt="" hidden />
+</div>
 <div class="status" part="status" aria-live="polite"></div>
 `;
 
@@ -101,16 +144,21 @@ export class XflipCardElement extends HTMLElement {
   static #registeredTag: string | null = null;
 
   #file: XflipFile | null = null;
-  #stage: HTMLDivElement;
+  #face: HTMLImageElement;
   #status: HTMLDivElement;
   #abort: AbortController | null = null;
   #loadToken = 0;
+  #currentFace: XflipFace = 'front';
+  #blobUrls: { front: string | null; back: string | null } = {
+    front: null,
+    back: null,
+  };
 
   constructor() {
     super();
     const root = this.attachShadow({ mode: 'open' });
     root.innerHTML = TEMPLATE_HTML;
-    this.#stage = root.querySelector('.stage') as HTMLDivElement;
+    this.#face = root.querySelector('.face') as HTMLImageElement;
     this.#status = root.querySelector('.status') as HTMLDivElement;
     this.#setStatus(null);
   }
@@ -123,6 +171,21 @@ export class XflipCardElement extends HTMLElement {
    */
   get file(): XflipFile | null {
     return this.#file;
+  }
+
+  /** Which face is currently presented. */
+  get face(): XflipFace {
+    return this.#currentFace;
+  }
+
+  /**
+   * Swap the visible face. No-op if no file is loaded yet. Flip animation
+   * lands in P3.4; for now this performs an instant swap.
+   */
+  showFace(face: XflipFace): void {
+    if (this.#currentFace === face) return;
+    this.#currentFace = face;
+    if (this.#file) this.#paintFace();
   }
 
   /** Source URL. Mirrors the `src` attribute. */
@@ -140,6 +203,9 @@ export class XflipCardElement extends HTMLElement {
 
   disconnectedCallback(): void {
     this.#cancelInFlight();
+    // Object URLs are tied to the document; revoke so detached elements
+    // don't leak. A subsequent reconnect with the same src will re-fetch.
+    this.#revokeBlobs();
   }
 
   attributeChangedCallback(
@@ -174,15 +240,54 @@ export class XflipCardElement extends HTMLElement {
       if (signal.aborted || token !== this.#loadToken) return;
       const file = decode(new Uint8Array(buf));
       if (signal.aborted || token !== this.#loadToken) return;
-      this.#file = file;
+      this.#adoptFile(file);
       this.#setStatus(null);
       this.dispatchEvent(new CustomEvent('xflip-load', { detail: { file }, bubbles: true }));
     } catch (err) {
       if (signal.aborted || token !== this.#loadToken) return;
       const error = err instanceof Error ? err : new Error(String(err));
-      this.#file = null;
+      this.#resetFile();
       this.#setStatus(`error: ${error.message}`);
       this.dispatchEvent(new CustomEvent('xflip-error', { detail: { error }, bubbles: true }));
+    }
+  }
+
+  #adoptFile(file: XflipFile): void {
+    this.#revokeBlobs();
+    this.#file = file;
+    this.#blobUrls.front = makeBlobUrl(file.front, file.head.frontFormat);
+    this.#blobUrls.back = makeBlobUrl(file.back, file.head.backFormat);
+    this.#currentFace =
+      (file.head.flags & HEAD_FLAG_DEFAULT_BACK) === HEAD_FLAG_DEFAULT_BACK ? 'back' : 'front';
+    this.#paintFace();
+  }
+
+  #paintFace(): void {
+    const url = this.#currentFace === 'back' ? this.#blobUrls.back : this.#blobUrls.front;
+    if (url === null) {
+      this.#face.hidden = true;
+      this.#face.removeAttribute('src');
+      return;
+    }
+    this.#face.src = url;
+    this.#face.hidden = false;
+  }
+
+  #resetFile(): void {
+    this.#revokeBlobs();
+    this.#file = null;
+    this.#face.hidden = true;
+    this.#face.removeAttribute('src');
+  }
+
+  #revokeBlobs(): void {
+    if (this.#blobUrls.front) {
+      URL.revokeObjectURL(this.#blobUrls.front);
+      this.#blobUrls.front = null;
+    }
+    if (this.#blobUrls.back) {
+      URL.revokeObjectURL(this.#blobUrls.back);
+      this.#blobUrls.back = null;
     }
   }
 
@@ -194,8 +299,7 @@ export class XflipCardElement extends HTMLElement {
   }
 
   #clear(): void {
-    this.#file = null;
-    this.#stage.replaceChildren();
+    this.#resetFile();
     this.#setStatus(null);
   }
 
