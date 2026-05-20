@@ -86,20 +86,20 @@ const file = encode({
         },
         imageData: sparkle,
       },
-      // 2 — specular highlight (overlay, large parallax so the bright spot
-      // visually tracks the pointer)
+      // 2 — specular highlight (overlay, big parallax so the bright spot
+      // tracks the pointer across most of the card)
       {
         layerId: 2,
         format: 'png',
         blendMode: 'overlay',
         effectType: 'specular',
-        opacity: 220,
+        opacity: 230,
         zOrder: 2,
         response: {
           input_source: 'pointer',
           response_curve: 'linear',
-          offset_max_x: 50,
-          offset_max_y: 50,
+          offset_max_x: 130,
+          offset_max_y: 180,
         },
         imageData: specular,
       },
@@ -319,16 +319,21 @@ function sparklePng(width, height) {
  */
 function specularPng(width, height) {
   const px = new Uint8Array(width * height * 4);
-  const r = Math.min(width, height) * 0.4;
+  // Tight highlight: ~18% of the shorter side, so the flare reads as a
+  // focused glare instead of filling the card.
+  const r = Math.min(width, height) * 0.18;
   const cx = width / 2;
   const cy = height / 2;
-  for (let y = 0; y < height; y++) {
-    for (let x = 0; x < width; x++) {
+  const bbox = Math.ceil(r * 1.6);
+  for (let y = Math.max(0, cy - bbox); y < Math.min(height, cy + bbox); y++) {
+    for (let x = Math.max(0, cx - bbox); x < Math.min(width, cx + bbox); x++) {
       const dx = x - cx;
       const dy = y - cy;
       const d = Math.sqrt(dx * dx + dy * dy);
       const t = Math.max(0, 1 - d / r);
-      const alpha = Math.round(220 * t * t * t);
+      // Steeper falloff (t⁴) so the bright core is small and the
+      // surrounding glow fades fast.
+      const alpha = Math.round(255 * t * t * t * t);
       if (alpha === 0) continue;
       const idx = (y * width + x) * 4;
       px[idx + 0] = 255;
