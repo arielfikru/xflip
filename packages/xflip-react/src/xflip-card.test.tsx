@@ -135,7 +135,7 @@ describe('<XflipCard>', () => {
     mount(<XflipCard ref={ref} src="/g.xflip" />);
     expect(ref.current).not.toBeNull();
     flushSync(() => {
-      root.render(<></>);
+      root.render(null);
     });
     expect(ref.current).toBeNull();
   });
@@ -145,7 +145,7 @@ describe('<XflipCard>', () => {
     mount(<XflipCard ref={(el) => seen.push(el)} src="/h.xflip" />);
     expect(seen[0]?.tagName.toLowerCase()).toBe('xflip-card');
     flushSync(() => {
-      root.render(<></>);
+      root.render(null);
     });
     expect(seen[seen.length - 1]).toBeNull();
   });

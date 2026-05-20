@@ -5,8 +5,8 @@
 
 **Last updated:** 2026-05-20
 **Current phase:** P6 (playground)
-**Current task:** P6.1 (Playground app scaffold)
-**Status:** P5 DONE. All 7 tasks shipped: skeleton, `<XflipCard>` wrapper, `useXflip(src)` hook, SSR safety, widened tests (392 total), README, size budget (`@xflip/react` 4.46 KB ≤ 5 KB gzip with `react`/`react-dom`/`react/jsx-runtime`/`@xflip/viewer` ignored). Next phase: P6 playground app — interactive demo of `<XflipCard>` + `useXflip` with real `.xflip` fixtures. `<XflipCard>` test suite widened to cover tiltMax prop updates, className/style/hidden/aria-label forwarding (React's custom-element class-attr heuristic accommodated), element identity across `src` changes, ref detach on unmount, callback-ref clearing, and listener swap when `onLoad` reference changes. Suite at 392 tests (+6); biome + typecheck clean. Next: P5.6 ships the package README with copy-paste examples for `<XflipCard>` and `useXflip`.
+**Current task:** P6.2 (Polish + multi-sample gallery)
+**Status:** P6.1 done. `apps/playground` ships a Vite + React app that consumes `@xflip/react`: source-aliased workspace deps (HMR edge-to-edge), generated fixtures via `scripts/build-fixtures.mjs` (synthesizes solid-color PNGs in pure Node + zlib, then encodes flat + layered `.xflip` files via `@xflip/core`), a dropdown to pick between samples, a file-input for uploading custom `.xflip` (revokes blob URLs on replacement), a tilt-max slider, Flip + Enable-gyroscope buttons that call viewer methods through a forwarded ref, and a sidebar showing `useXflip` status + decoded JSON. Verified visually in Chromium: blue front renders, `xflip-load` fires (`v1.1 · 240×336`). Next: P6.2 expands the sample gallery and polishes the layout. `<XflipCard>` test suite widened to cover tiltMax prop updates, className/style/hidden/aria-label forwarding (React's custom-element class-attr heuristic accommodated), element identity across `src` changes, ref detach on unmount, callback-ref clearing, and listener swap when `onLoad` reference changes. Suite at 392 tests (+6); biome + typecheck clean. Next: P5.6 ships the package README with copy-paste examples for `<XflipCard>` and `useXflip`.
 
 **P4.6 status (history):** CI `cli-smoke` job builds the CLI bin and drives `scripts/cli-smoke.mjs` end-to-end on ubuntu / macOS / windows (help, create, inspect, validate, extract, layers add, validate of layered output, META round-trip, unknown-command exit-2). Local: 9/9 checks pass.
 
@@ -18,12 +18,12 @@
 
 ## Quick Resume Pointer
 
-**Next Task:** `P6.1` — Scaffold `apps/playground` as a Vite + React
-app that consumes `@xflip/react`. Should include: a file picker for
-local `.xflip` files (via `URL.createObjectURL`), a small library of
-prebuilt fixtures shipped from `tests/fixtures`, and a sidebar that
-shows the decoded `XflipFile` head + layer metadata via `useXflip`.
-Keep it under 200 LOC; visual polish is P6.2+.
+**Next Task:** `P6.2` — Expand the playground sample gallery (cover
+all four `flip_axis` orientations + a hEfx-only file with no
+front/back layers); add presets for `tilt_max_angle` and surface the
+prefers-reduced-motion override toggle as a UI control. Keep the
+single-page layout but make it responsive (320 px viewport must still
+show the card + at least one control).
 
 **Concrete next actions** for P1 (per AGENTS.md Phase 1 + PROGRESS Phase 1 breakdown):
 
@@ -104,6 +104,7 @@ Append rows as tasks complete. Format:
 
 | Date       | Task   | Description                         | Commit   | Notes |
 | ---------- | ------ | ----------------------------------- | -------- | ----- |
+| 2026-05-20 | P6.1   | `apps/playground` scaffold: Vite + React + workspace-source aliases; `scripts/build-fixtures.mjs` synthesizes solid-color PNGs (node:zlib) + encodes flat + layered `.xflip`; UI ships sample dropdown, custom file upload (blob URLs revoked on swap), tilt-max slider, Flip + gyroscope buttons via forwarded ref, sidebar with `useXflip` status + decoded JSON | (this)   | verified in Chromium @ 1200×800; status reads "success" v1.1 · 240×336; lint + typecheck clean; bundle 51.62 KB gzip (includes react-dom) |
 | 2026-05-20 | P5.7   | size-limit entry `@xflip/react (ESM, gzip)` at 5 KB ceiling; ignores `react`, `react-dom`, `react/jsx-runtime`, `@xflip/viewer`; closes P5 | (this)   | measured 4.46 KB gzip incl. `@xflip/core` decode |
 | 2026-05-20 | P5.6   | `packages/xflip-react/README.md` — install, SSR safety guarantee, `<XflipCard>` props table, ref forwarding example, JSX-augmentation note, `useXflip(src)` state machine | 8ae6028  | docs only; no test delta |
 | 2026-05-20 | P5.5   | `<XflipCard>` unit-test coverage widened: tiltMax update on rerender, HTML attribute forwarding (class/style/hidden/aria-label), element identity across src changes, ref detach on unmount, callback-ref clearing, onLoad listener swap on handler change | 52ef3af  | +6 tests (392 total); no React Testing Library dep needed; raw `createRoot` + `flushSync`/`act` harness suffices |

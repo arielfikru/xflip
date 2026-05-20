@@ -46,6 +46,7 @@ tests/fixtures/generated/
 
 # Vite / build caches
 .vite/
+.playwright-mcp/
 
 # Misc
 *.tmp
