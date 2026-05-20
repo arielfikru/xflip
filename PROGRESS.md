@@ -5,8 +5,10 @@
 
 **Last updated:** 2026-05-20
 **Current phase:** P4 (xflip-cli)
-**Current task:** P4.6 (cross-platform CI smoke matrix)
-**Status:** P4.5 done. `xflip layers add <file> --face front|back --image <path> --effect-type <name> --output <out>` inserts a layer into `fLyr`/`bLyr`, creating the chunk when absent and promoting v1.0 → v1.1. Image format inferred from `--image` extension; override with `--format`. Defaults: `layer_id` = next unused, `z_order` = max + 1 (capped at 255), `opacity` = 255, `blend_mode` = normal. Optional `--response <path>` reads UTF-8 JSON. Refuses to overwrite `--output` (and in-place writes) without `--force`. Pure `addLayer()` + `encodeWithLayer` + `isBlendMode` re-exported from the library entry. 33 new tests bring suite to 369 passing.
+**Current task:** P4.7 (CLI README + ADR for argument-style decisions)
+**Status:** P4.6 done. CI now runs `cli-smoke` on ubuntu/macOS/windows: typecheck → CLI tests → CLI build → `scripts/cli-smoke.mjs` that drives the real bin through help/create/inspect/validate/extract/layers-add/validate-layered + META round-trip + unknown-command exit-2. Local smoke pass: 9/9 checks.
+
+**P4.5 status (history):** `xflip layers add <file> --face front|back --image <path> --effect-type <name> --output <out>` inserts a layer into `fLyr`/`bLyr`, creating the chunk when absent and promoting v1.0 → v1.1. Image format inferred from `--image` extension; override with `--format`. Defaults: `layer_id` = next unused, `z_order` = max + 1 (capped at 255), `opacity` = 255, `blend_mode` = normal. Optional `--response <path>` reads UTF-8 JSON. Refuses to overwrite `--output` (and in-place writes) without `--force`. Pure `addLayer()` + `encodeWithLayer` + `isBlendMode` re-exported from the library entry. 33 new tests bring suite to 369 passing.
 
 **P4.1 status (history):** `@xflip/cli` package scaffolded (tsup esm + node platform, per-pkg typecheck, vitest, workspace dep on `@xflip/core`, `bin: xflip → dist/cli.js`). First command `xflip inspect <file>` ships: signature + per-chunk summary (type/offset/length/critical), `--strict-ancillary-crc` flag, `-h/--help` and root `help` dispatch, exit codes 0/1/2 (success / runtime error / usage error). Programmatic `inspect()` exported from library entry. 12 new tests (4 inspect, 8 cli) bring suite to 275 passing. Zero runtime deps (uses `node:util.parseArgs`).
 
@@ -14,11 +16,11 @@
 
 ## Quick Resume Pointer
 
-**Next Task:** `P4.6` — Cross-platform smoke matrix in CI (macOS, Linux,
-Windows). Run `pnpm typecheck && pnpm lint && pnpm test` plus a tiny
-end-to-end exercise of each `xflip` subcommand against the golden
-fixture on all three OSes via GitHub Actions matrix. Catch path-
-separator / line-ending issues before they ship.
+**Next Task:** `P4.7` — Write a README for `@xflip/cli` documenting every
+subcommand with examples, exit-code semantics, and the
+`--strict-ancillary-crc` / `--force` flags. Add ADR 0003 capturing the
+argument-style decisions (flag-only, no positional sub-options;
+`node:util.parseArgs`; zero runtime deps).
 
 **Concrete next actions** for P1 (per AGENTS.md Phase 1 + PROGRESS Phase 1 breakdown):
 
@@ -81,7 +83,7 @@ Mark each phase done only when its AGENTS.md DoD is fully met.
 | P1    | xflip-core v1.0   | ✅ DONE   | 2026-05-19 | 2026-05-20 | Bundle 3.23KB/10KB; cov 98.72%; zero deps |
 | P2    | xflip-core v1.1   | ✅ DONE   | 2026-05-20 | 2026-05-20 | 229 tests; layered chunks lifted to typed fields |
 | P3    | xflip-viewer      | ✅ DONE   | 2026-05-20 | 2026-05-20 | All 9 tasks shipped; Playwright matrix in CI; viewer 6.82 KB gzip |
-| P4    | xflip-cli         | 🚧 WIP    | 2026-05-20 | -         | P4.1-4.5 done; inspect/validate/extract/create/layers add shipped |
+| P4    | xflip-cli         | 🚧 WIP    | 2026-05-20 | -         | P4.1-4.6 done; cross-platform CI smoke matrix in place |
 | P5    | xflip-react       | ☐ TODO   | -         | -         | |
 | P6    | playground        | ☐ TODO   | -         | -         | |
 | P7    | docs              | ☐ TODO   | -         | -         | |
@@ -99,6 +101,7 @@ Append rows as tasks complete. Format:
 
 | Date       | Task   | Description                         | Commit   | Notes |
 | ---------- | ------ | ----------------------------------- | -------- | ----- |
+| 2026-05-20 | P4.6   | CI `cli-smoke` matrix (ubuntu / macOS / windows) — builds the CLI bin, runs `scripts/cli-smoke.mjs` end-to-end against the real `xflip` for help/create/inspect/validate/extract/layers-add/validate-layered + META round-trip + unknown-command exit-2 | 3e8d5b0 | local smoke pass 9/9; biome ignores `.github/` and `scripts/` so no lint config change |
 | 2026-05-20 | P4.5   | `xflip layers add` inserts a layer into fLyr/bLyr; creates chunk if absent; promotes v1.0 → v1.1; defaults for layer_id/z_order/opacity; optional --response JSON file; --force gates overwrites incl. in-place | be9d9b4 | +33 tests (369 total); programmatic `addLayer()` + `encodeWithLayer()` + `isBlendMode` re-exported |
 | 2026-05-20 | P4.4   | `xflip create` builds .xflip from two images; extension→format inference with --front-format/--back-format overrides; --flip-axis / --default-back / --no-flip-anim flags; --meta validates UTF-8 JSON; --force overwrite gate | 7b2cc2e | +32 tests (336 total); programmatic `buildFile()` + `formatFromExtension()` re-exported |
 | 2026-05-20 | P4.3   | `xflip extract <file> --to <dir>` writes front/back (+meta.json when META present), mkdir -p target, refuse overwrite without --force | 3e01c3b | +19 tests (304 total); programmatic `extract()` re-exported |
@@ -229,7 +232,7 @@ works; Playwright suites pass on three engines.
 | P4.3    | `xflip extract <file> --to <dir>` — write FRNT/BACK + META        | ✅      |
 | P4.4    | `xflip create --front a --back b --output card.xflip [--meta]`    | ✅      |
 | P4.5    | `xflip layers add <file> --layer ...` (advanced)                  | ✅      |
-| P4.6    | Cross-platform smoke (macOS, Linux, Windows) via CI matrix        | ☐      |
+| P4.6    | Cross-platform smoke (macOS, Linux, Windows) via CI matrix        | ✅      |
 | P4.7    | README + ADR for CLI argument-style decisions                     | ☐      |
 
 **P4 DoD:** Per AGENTS.md §5 Phase 4 — all commands work as documented;
