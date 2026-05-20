@@ -600,6 +600,63 @@ describe('XflipCardElement fetch + decode lifecycle', () => {
     el.remove();
   });
 
+  it('deviceorientation updates tilt vars', async () => {
+    mockFetchOk(makeFileBytes());
+    const el = document.createElement(XFLIP_CARD_TAG) as XflipCardElement;
+    const loaded = waitForEvent<CustomEvent<XflipLoadEventDetail>>(el, 'xflip-load');
+    document.body.append(el);
+    el.setAttribute('src', './card.xflip');
+    await loaded;
+    el.tiltMax = 10;
+    const ev = new Event('deviceorientation') as DeviceOrientationEvent;
+    Object.defineProperty(ev, 'gamma', { value: 15 });
+    Object.defineProperty(ev, 'beta', { value: -15 });
+    window.dispatchEvent(ev);
+    await new Promise((r) => requestAnimationFrame(() => r(null)));
+    expect(el.style.getPropertyValue('--xflip-tilt-y')).toBe('5.00deg');
+    expect(el.style.getPropertyValue('--xflip-tilt-x')).toBe('5.00deg');
+    el.remove();
+  });
+
+  it('interaction_modes without "gyroscope" detaches gyroscope', async () => {
+    mockFetchOk(makeLayeredFileBytes({ effects: { interaction_modes: ['pointer'] } }));
+    const el = document.createElement(XFLIP_CARD_TAG) as XflipCardElement;
+    const loaded = waitForEvent<CustomEvent<XflipLoadEventDetail>>(el, 'xflip-load');
+    document.body.append(el);
+    el.setAttribute('src', './gated.xflip');
+    await loaded;
+    el.tiltMax = 10;
+    const ev = new Event('deviceorientation') as DeviceOrientationEvent;
+    Object.defineProperty(ev, 'gamma', { value: 30 });
+    Object.defineProperty(ev, 'beta', { value: 30 });
+    window.dispatchEvent(ev);
+    await new Promise((r) => requestAnimationFrame(() => r(null)));
+    expect(el.style.getPropertyValue('--xflip-tilt-x')).toBe('');
+    el.remove();
+  });
+
+  it('enableGyroscope() returns false when DeviceOrientationEvent is missing', async () => {
+    const w = window as unknown as { DeviceOrientationEvent?: unknown };
+    const original = w.DeviceOrientationEvent;
+    w.DeviceOrientationEvent = undefined;
+    const el = document.createElement(XFLIP_CARD_TAG) as XflipCardElement;
+    document.body.append(el);
+    expect(await el.enableGyroscope()).toBe(false);
+    w.DeviceOrientationEvent = original;
+    el.remove();
+  });
+
+  it('enableGyroscope() returns false when requestPermission is denied', async () => {
+    const w = window as unknown as { DeviceOrientationEvent?: unknown };
+    const original = w.DeviceOrientationEvent;
+    w.DeviceOrientationEvent = { requestPermission: async () => 'denied' };
+    const el = document.createElement(XFLIP_CARD_TAG) as XflipCardElement;
+    document.body.append(el);
+    expect(await el.enableGyroscope()).toBe(false);
+    w.DeviceOrientationEvent = original;
+    el.remove();
+  });
+
   it('cancels in-flight fetch on disconnect', async () => {
     let captured: AbortSignal | null = null;
     vi.stubGlobal(

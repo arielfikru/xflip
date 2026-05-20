@@ -40,6 +40,14 @@ const HEAD_FLAG_DEFAULT_BACK = 0x01;
 const HEAD_FLAG_NO_FLIP_ANIM = 0x02;
 
 /**
+ * Normalization range (deg) for `deviceorientation` gamma/beta. A phone held
+ * at ±this many degrees produces the full tilt magnitude; readings beyond
+ * are clamped. Picked to match the comfort range of a one-handed phone
+ * wrist roll without forcing the user to flip the device upside down.
+ */
+const GYRO_RANGE_DEG = 30;
+
+/**
  * MIME types for the formats `<img>` can render natively. Unknown or
  * non-image formats (`raw`, `custom`, future codecs) fall back to
  * `application/octet-stream`, which most browsers refuse to render — the
@@ -253,6 +261,9 @@ export class XflipCardElement extends HTMLElement {
   #hefxDataKeys: string[] = [];
   #tiltRaf = 0;
   #tiltPending: { x: number; y: number } | null = null;
+  #gyroAttached = false;
+  #gyroGranted = false;
+  #gyroModeAllowed = true;
   #onClick = (): void => {
     if (this.#file) this.toggleFace();
   };
@@ -263,21 +274,21 @@ export class XflipCardElement extends HTMLElement {
     if (rect.width === 0 || rect.height === 0) return;
     const nx = ((ev.clientX - rect.left) / rect.width) * 2 - 1;
     const ny = ((ev.clientY - rect.top) / rect.height) * 2 - 1;
-    this.#tiltPending = {
-      x: Math.max(-1, Math.min(1, nx)),
-      y: Math.max(-1, Math.min(1, ny)),
-    };
-    this.#scheduleTilt();
+    this.#queueTilt(nx, ny);
   };
   #onPointerLeave = (): void => {
-    this.#tiltPending = null;
-    if (this.#tiltRaf) {
-      cancelAnimationFrame(this.#tiltRaf);
-      this.#tiltRaf = 0;
-    }
-    this.removeAttribute('data-tilting');
-    this.style.setProperty('--xflip-tilt-x', '0deg');
-    this.style.setProperty('--xflip-tilt-y', '0deg');
+    this.#releaseTilt();
+  };
+  // Map device orientation to the same tilt pipeline as the pointer.
+  // gamma (left/right roll, -90..90) drives x; beta (front/back, -180..180)
+  // drives y. Clamp to ±GYRO_RANGE so a held phone at rest doesn't max-tilt.
+  #onDeviceOrientation = (ev: DeviceOrientationEvent): void => {
+    if (this.tiltMax <= 0) return;
+    if (this.#animationsDisabled()) return;
+    if (ev.gamma === null || ev.beta === null) return;
+    const nx = ev.gamma / GYRO_RANGE_DEG;
+    const ny = ev.beta / GYRO_RANGE_DEG;
+    this.#queueTilt(nx, ny);
   };
 
   constructor() {
@@ -340,6 +351,7 @@ export class XflipCardElement extends HTMLElement {
     this.addEventListener('pointermove', this.#onPointerMove);
     this.addEventListener('pointerleave', this.#onPointerLeave);
     this.addEventListener('pointercancel', this.#onPointerLeave);
+    this.#maybeAttachGyro();
     if (this.src) this.#scheduleLoad(this.src);
   }
 
@@ -348,6 +360,7 @@ export class XflipCardElement extends HTMLElement {
     this.removeEventListener('pointermove', this.#onPointerMove);
     this.removeEventListener('pointerleave', this.#onPointerLeave);
     this.removeEventListener('pointercancel', this.#onPointerLeave);
+    this.#detachGyro();
     if (this.#tiltRaf) {
       cancelAnimationFrame(this.#tiltRaf);
       this.#tiltRaf = 0;
@@ -356,6 +369,39 @@ export class XflipCardElement extends HTMLElement {
     // Object URLs are tied to the document; revoke so detached elements
     // don't leak. A subsequent reconnect with the same src will re-fetch.
     this.#revokeBlobs();
+  }
+
+  /**
+   * Request access to device orientation events (gyroscope tilt).
+   *
+   * @remarks
+   * On iOS Safari, `DeviceOrientationEvent.requestPermission()` must be
+   * invoked from a user gesture (click/tap handler) — call this from a
+   * button's `onclick`. On other browsers, returns `true` immediately and
+   * the listener is attached on connect.
+   *
+   * @returns `true` if the listener is now attached, `false` if denied or
+   *   unsupported.
+   */
+  async enableGyroscope(): Promise<boolean> {
+    if (typeof window === 'undefined') return false;
+    const ctor = (
+      window as unknown as {
+        DeviceOrientationEvent?: { requestPermission?: () => Promise<'granted' | 'denied'> };
+      }
+    ).DeviceOrientationEvent;
+    if (!ctor) return false;
+    if (typeof ctor.requestPermission === 'function') {
+      try {
+        const result = await ctor.requestPermission();
+        if (result !== 'granted') return false;
+      } catch {
+        return false;
+      }
+    }
+    this.#gyroGranted = true;
+    this.#maybeAttachGyro();
+    return this.#gyroAttached;
   }
 
   attributeChangedCallback(
@@ -426,6 +472,36 @@ export class XflipCardElement extends HTMLElement {
     if (file.frontLayers) this.#renderLayers(this.#frontLayersBox, file.frontLayers);
     if (file.backLayers) this.#renderLayers(this.#backLayersBox, file.backLayers);
     if (file.effects) this.#applyHefx(file.effects);
+    // Gate gyroscope by interaction_modes if the file declares them.
+    // Absent list → permissive. Present list → opt-in.
+    const modes = file.effects?.interaction_modes;
+    this.#gyroModeAllowed = !modes || modes.includes('gyroscope');
+    if (this.#gyroModeAllowed) this.#maybeAttachGyro();
+    else this.#detachGyro();
+  }
+
+  #maybeAttachGyro(): void {
+    if (this.#gyroAttached) return;
+    if (!this.#gyroModeAllowed) return;
+    if (typeof window === 'undefined') return;
+    const ctor = (
+      window as unknown as {
+        DeviceOrientationEvent?: { requestPermission?: () => Promise<'granted' | 'denied'> };
+      }
+    ).DeviceOrientationEvent;
+    if (!ctor) return;
+    // iOS exposes requestPermission(); defer attach until the caller
+    // invokes enableGyroscope() from a user gesture and gets 'granted'.
+    if (typeof ctor.requestPermission === 'function' && !this.#gyroGranted) return;
+    window.addEventListener('deviceorientation', this.#onDeviceOrientation);
+    this.#gyroAttached = true;
+  }
+
+  #detachGyro(): void {
+    if (!this.#gyroAttached) return;
+    if (typeof window === 'undefined') return;
+    window.removeEventListener('deviceorientation', this.#onDeviceOrientation);
+    this.#gyroAttached = false;
   }
 
   #renderLayers(host: HTMLDivElement, chunk: XflipLayerChunk): void {
@@ -556,6 +632,25 @@ export class XflipCardElement extends HTMLElement {
     if (this.#file && (this.#file.head.flags & HEAD_FLAG_NO_FLIP_ANIM) !== 0) return true;
     if (typeof window === 'undefined' || typeof window.matchMedia !== 'function') return false;
     return window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  }
+
+  #queueTilt(nx: number, ny: number): void {
+    this.#tiltPending = {
+      x: Math.max(-1, Math.min(1, nx)),
+      y: Math.max(-1, Math.min(1, ny)),
+    };
+    this.#scheduleTilt();
+  }
+
+  #releaseTilt(): void {
+    this.#tiltPending = null;
+    if (this.#tiltRaf) {
+      cancelAnimationFrame(this.#tiltRaf);
+      this.#tiltRaf = 0;
+    }
+    this.removeAttribute('data-tilting');
+    this.style.setProperty('--xflip-tilt-x', '0deg');
+    this.style.setProperty('--xflip-tilt-y', '0deg');
   }
 
   #scheduleTilt(): void {
