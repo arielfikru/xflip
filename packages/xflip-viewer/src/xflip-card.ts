@@ -2,10 +2,12 @@ import {
   type BlendMode,
   decode,
   type ImageFormat,
+  samplePose,
   type XflipFile,
   type XflipHefx,
   type XflipLayer,
   type XflipLayerChunk,
+  type XflipPose,
 } from '@xflip/core';
 
 /**
@@ -182,6 +184,11 @@ const TEMPLATE_HTML = `
     transition: transform var(--xflip-tilt-release, 400ms) ease-out;
   }
   :host([data-tilting]) .layer { transition: none; }
+  /* Pose-rigged layers: JS drives transform directly via samplePose */
+  .layer[data-has-pose] {
+    transform: none;
+    transition: none;
+  }
   .status {
     position: absolute;
     inset: 0;
@@ -273,6 +280,7 @@ export class XflipCardElement extends HTMLElement {
   };
   #layerBlobUrls: string[] = [];
   #hefxDataKeys: string[] = [];
+  #poseLayers: Array<{ el: HTMLImageElement; pose: XflipPose; baseOpacity: number }> = [];
   #tiltRaf = 0;
   #tiltPending: { x: number; y: number } | null = null;
   #gyroAttached = false;
@@ -539,10 +547,40 @@ export class XflipCardElement extends HTMLElement {
     img.dataset.layerId = String(layer.layerId);
     img.dataset.blendMode = layer.blendMode;
     img.dataset.effectType = layer.effectType;
-    img.style.opacity = (layer.opacity / 255).toFixed(3);
+    const baseOpacity = layer.opacity / 255;
+    img.style.opacity = baseOpacity.toFixed(3);
     img.style.mixBlendMode = BLEND_MODE_CSS[layer.blendMode];
-    this.#applyLayerResponse(img, layer);
+    if (layer.pose) {
+      img.dataset.hasPose = '';
+      this.#poseLayers.push({ el: img, pose: layer.pose, baseOpacity });
+      // Apply neutral pose immediately so layer has correct transform before first tilt.
+      this.#applyPoseToElement(img, layer.pose, 0, 0, baseOpacity);
+    } else {
+      this.#applyLayerResponse(img, layer);
+    }
     return img;
+  }
+
+  #applyPoseToElement(
+    el: HTMLImageElement,
+    pose: XflipPose,
+    nx: number,
+    ny: number,
+    baseOpacity: number,
+  ): void {
+    const kf = samplePose(pose, nx, ny);
+    el.style.transform = [
+      `translate3d(${kf.tx.toFixed(2)}px, ${kf.ty.toFixed(2)}px, 0)`,
+      `rotate(${kf.rotationRad.toFixed(4)}rad)`,
+      `scale(${kf.scale.toFixed(4)})`,
+    ].join(' ');
+    el.style.opacity = (baseOpacity * kf.opacity).toFixed(3);
+  }
+
+  #applyPoseLayers(nx: number, ny: number): void {
+    for (const { el, pose, baseOpacity } of this.#poseLayers) {
+      this.#applyPoseToElement(el, pose, nx, ny, baseOpacity);
+    }
   }
 
   #applyLayerResponse(img: HTMLImageElement, layer: XflipLayer): void {
@@ -603,6 +641,7 @@ export class XflipCardElement extends HTMLElement {
     this.#frontLayersBox.replaceChildren();
     this.#backLayersBox.replaceChildren();
     this.#clearHefxVars();
+    this.#poseLayers = [];
     this.removeAttribute('data-no-anim');
     this.#currentFace = 'front';
     this.#flipper.dataset.face = 'front';
@@ -669,6 +708,7 @@ export class XflipCardElement extends HTMLElement {
     this.style.setProperty('--xflip-pointer-ny', '0');
     this.style.setProperty('--xflip-pointer-px', '50%');
     this.style.setProperty('--xflip-pointer-py', '50%');
+    this.#applyPoseLayers(0, 0);
   }
 
   #scheduleTilt(): void {
@@ -688,6 +728,7 @@ export class XflipCardElement extends HTMLElement {
       this.style.setProperty('--xflip-pointer-ny', y.toFixed(3));
       this.style.setProperty('--xflip-pointer-px', `${(((x + 1) / 2) * 100).toFixed(2)}%`);
       this.style.setProperty('--xflip-pointer-py', `${(((y + 1) / 2) * 100).toFixed(2)}%`);
+      this.#applyPoseLayers(x, y);
     });
   }
 
