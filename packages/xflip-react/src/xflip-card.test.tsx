@@ -88,4 +88,77 @@ describe('<XflipCard>', () => {
     expect(ref.current?.tiltMax).toBe(12);
     expect(container.querySelector('xflip-card')?.getAttribute('tiltMax')).toBeNull();
   });
+
+  it('updates tiltMax when the prop changes between renders', () => {
+    const ref = createRef<XflipCardElement>();
+    mount(<XflipCard ref={ref} src="/e.xflip" tiltMax={6} />);
+    expect(ref.current?.tiltMax).toBe(6);
+    mount(<XflipCard ref={ref} src="/e.xflip" tiltMax={18} />);
+    expect(ref.current?.tiltMax).toBe(18);
+  });
+
+  it('forwards className / style / hidden / aria-label to the host element', () => {
+    mount(
+      <XflipCard
+        src="/f.xflip"
+        className="card-host"
+        style={{ width: 240 }}
+        hidden
+        aria-label="Demo card"
+      />,
+    );
+    const el = container.querySelector('xflip-card') as HTMLElement | null;
+    // React's custom-element heuristic kicks in once the tag contains a
+    // hyphen *and* the element is upgraded; until then it treats the tag
+    // like a generic HTML element and writes `className` literally.
+    // We only care that the attribute lands on the host, so accept either
+    // spelling.
+    const klass = el?.getAttribute('class') ?? el?.getAttribute('className');
+    expect(klass).toBe('card-host');
+    expect(el?.style.width).toBe('240px');
+    expect(el?.hasAttribute('hidden')).toBe(true);
+    expect(el?.getAttribute('aria-label')).toBe('Demo card');
+  });
+
+  it('preserves the same element identity across src changes', () => {
+    const ref = createRef<XflipCardElement>();
+    mount(<XflipCard ref={ref} src="/first.xflip" />);
+    const initial = ref.current;
+    expect(initial).not.toBeNull();
+    mount(<XflipCard ref={ref} src="/second.xflip" />);
+    expect(ref.current).toBe(initial);
+    expect(ref.current?.getAttribute('src')).toBe('/second.xflip');
+  });
+
+  it('detaches the ref when the component unmounts via render(null)', () => {
+    const ref = createRef<XflipCardElement>();
+    mount(<XflipCard ref={ref} src="/g.xflip" />);
+    expect(ref.current).not.toBeNull();
+    flushSync(() => {
+      root.render(<></>);
+    });
+    expect(ref.current).toBeNull();
+  });
+
+  it('supports a callback ref and clears it on unmount', () => {
+    const seen: Array<XflipCardElement | null> = [];
+    mount(<XflipCard ref={(el) => seen.push(el)} src="/h.xflip" />);
+    expect(seen[0]?.tagName.toLowerCase()).toBe('xflip-card');
+    flushSync(() => {
+      root.render(<></>);
+    });
+    expect(seen[seen.length - 1]).toBeNull();
+  });
+
+  it('drops the previous onLoad listener when the handler reference changes', () => {
+    const first = vi.fn();
+    const second = vi.fn();
+    mount(<XflipCard src="/i.xflip" onLoad={first} />);
+    mount(<XflipCard src="/i.xflip" onLoad={second} />);
+    const el = container.querySelector('xflip-card');
+    const fakeFile = { head: {}, front: new Uint8Array(), back: new Uint8Array() };
+    el?.dispatchEvent(new CustomEvent('xflip-load', { detail: { file: fakeFile } }));
+    expect(first).not.toHaveBeenCalled();
+    expect(second).toHaveBeenCalledWith(fakeFile);
+  });
 });
