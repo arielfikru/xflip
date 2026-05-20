@@ -50,6 +50,13 @@
       "path": "packages/xflip-core/dist/index.js",
       "limit": "10 KB",
       "gzip": true
+    },
+    {
+      "name": "@xflip/viewer (ESM, gzip)",
+      "path": "packages/xflip-viewer/dist/index.js",
+      "import": "{ XflipCardElement }",
+      "limit": "50 KB",
+      "gzip": true
     }
   ]
 }
