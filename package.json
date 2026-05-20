@@ -43,5 +43,13 @@
     "tsup": "^8.3.0",
     "typescript": "^5.6.0",
     "vitest": "^2.1.0"
-  }
+  },
+  "size-limit": [
+    {
+      "name": "@xflip/core (ESM, gzip)",
+      "path": "packages/xflip-core/dist/index.js",
+      "limit": "10 KB",
+      "gzip": true
+    }
+  ]
 }
