@@ -1,18 +1,19 @@
 # xflip
 
-> Open image format for two-sided visual content with optional layered holographic effects.
+> Open image format for two-sided visual content with a built-in holographic / light-reflection effect at render time.
 
 **Status:** Experimental, pre-1.0. See [SOW.md](./SOW.md) for project charter.
 
 ## What is xflip?
 
 xflip is a chunk-based container format (inspired by PNG) holding a **front
-image**, a **back image**, optional metadata, and optional **layered effects**
-for holographic / material-response rendering.
+image**, a **back image**, and optional metadata. The reference viewer
+overlays a built-in holographic sheen that reacts to pointer / device tilt
+— no per-file effect configuration required.
 
 xflip is **not a codec.** Image data inside the container uses existing
 formats (PNG, JPEG, WebP, AVIF, JXL). xflip provides the structural
-wrapper, semantic meaning, and effect orchestration.
+wrapper.
 
 ## Specification
 

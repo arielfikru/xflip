@@ -30,7 +30,7 @@ const isLowercase = (charCode: number): boolean => charCode >= 0x61 && charCode 
  * buffer (no copy).
  */
 export interface ParsedChunk {
-  /** Four-character ASCII chunk type code, case-sensitive (e.g., "HEAD", "fLyr"). */
+  /** Four-character ASCII chunk type code, case-sensitive (e.g., "HEAD", "tHmb"). */
   readonly type: string;
   /** Byte offset of the TYPE field in the source buffer. */
   readonly offset: number;
@@ -213,7 +213,7 @@ const typeBytesOf = (type: string): Uint8Array =>
  * `TYPE + PAYLOAD` per spec §3.4.
  *
  * @param writer - Destination buffer.
- * @param type - Four-character ASCII chunk type (e.g., "HEAD", "fLyr").
+ * @param type - Four-character ASCII chunk type (e.g., "HEAD", "tHmb").
  * @param payload - Chunk payload bytes; may be empty.
  *
  * @throws XflipEncodeError - Type tag malformed or payload too large.

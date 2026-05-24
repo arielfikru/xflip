@@ -2,7 +2,8 @@
 
 Encoder and decoder for the **xflip** image format — an open container for
 two-sided visual content (trading cards, collectibles, NFC-style flip
-media) with optional holographic effects.
+media). The format is flat v1.0; holographic / light-reflection rendering
+lives in `@xflip/viewer` and is always-on, not data-driven.
 
 Zero runtime dependencies. ESM only. Targets Node 20+ and evergreen
 browsers.
@@ -34,34 +35,24 @@ const out: Uint8Array = encode(file);
 
 ### Primary
 
-| Symbol            | Purpose                                       |
-| ----------------- | --------------------------------------------- |
-| `decode(bytes)`   | Bytes → typed `XflipFile`                     |
-| `encode(file)`    | `XflipFile` → bytes                           |
-| `XflipFile`       | Decoded file (HEAD + FRNT + BACK + layered + ancillary) |
-| `XflipHead`       | Decoded HEAD chunk fields                     |
-| `XflipLayerChunk` | Decoded `fLyr`/`bLyr` (v1.1)                  |
-| `XflipLayer`      | Single layer record                           |
-| `XflipLayerResponse` | Per-layer response parameters (open schema, see spec §5.6.2) |
-| `XflipHefx`       | Decoded `hEfx` global parameters (open schema, see spec §5.7) |
+| Symbol            | Purpose                                                            |
+| ----------------- | ------------------------------------------------------------------ |
+| `decode(bytes)`   | Bytes → typed `XflipFile`                                          |
+| `encode(file)`    | `XflipFile` → bytes                                                |
+| `XflipFile`       | Decoded file (HEAD + FRNT + BACK + ancillary)                      |
+| `XflipHead`       | Decoded HEAD chunk fields                                          |
 | `ImageFormat`     | `'raw' \| 'png' \| 'jpeg' \| 'webp' \| 'avif' \| 'jxl' \| 'custom'` |
-| `FlipAxis`        | `'horizontal' \| 'vertical' \| 'diagonal'`    |
-| `BlendMode`       | `'normal' \| 'multiply' \| 'screen' \| ... \| 'custom'` |
+| `FlipAxis`        | `'horizontal' \| 'vertical' \| 'diagonal'`                         |
 
 ### Lower-level
 
 | Symbol                 | Purpose                                         |
 | ---------------------- | ----------------------------------------------- |
 | `parseChunks(bytes)`   | Iterate raw chunk list without HEAD parsing     |
-| `parseLayerChunk(payload)` | Parse a raw `fLyr`/`bLyr` payload           |
-| `serializeLayerChunk(chunk)` | Inverse of `parseLayerChunk`              |
-| `parseHefx(payload)`   | Parse a raw `hEfx` payload                      |
-| `serializeHefx(hefx)`  | Inverse of `parseHefx`                          |
 | `crc32(bytes)`         | CRC-32/ISO-HDLC (PNG polynomial) checksum       |
 | `crc32Concat(...spans)`| Multi-span CRC without joining buffers          |
 | `IMAGE_FORMAT_CODES`   | Name → wire byte (`png` → `0x01`, ...)          |
 | `FLIP_AXIS_CODES`      | Name → wire byte                                |
-| `BLEND_MODE_CODES`     | Name → wire byte (per spec §5.6.1)              |
 
 ### Errors
 
@@ -79,13 +70,12 @@ Treat any non-`XflipError` throw as a bug — please file an issue.
 
 See the spec at `xflip-spec-v0.2.md` in the repository root. Highlights:
 
-- Magic bytes `XFLP` + version (`0x01 0x00` for v1.0, `0x01 0x01` for v1.1).
+- Magic bytes `XFLP` + version (`0x01 0x00` for v1.0).
 - PNG-style chunk framing: `TYPE` (4 bytes) + `LENGTH` (uint32 BE) +
   `PAYLOAD` + `CRC32` (uint32 BE).
 - Critical chunks: `HEAD`, `FRNT`, `BACK`, `ENDX`.
-- Ancillary chunks: `META`, `tHmb`, `fLip`, `eDge` (preserved verbatim);
-  `fLyr`, `bLyr`, `hEfx` (lifted to typed fields when parseable, else
-  preserved verbatim per spec §3.3); plus any unknown lowercase-first tag.
+- Ancillary chunks: `META`, `tHmb`, `fLip`, `sIgn`, `eDge` preserved
+  verbatim; any unknown lowercase-first tag also preserved.
 - CRC-32/ISO-HDLC (polynomial `0xEDB88320`, init `0xFFFFFFFF`, final XOR
   `0xFFFFFFFF`).
 

@@ -55,11 +55,16 @@ xflip-card {
 
 .panel h1 {
   font-size: 18px;
-  margin: 0 0 16px 0;
+  margin: 0 0 4px 0;
   font-weight: 600;
   letter-spacing: 0.04em;
   text-transform: uppercase;
   color: #94a3b8;
+}
+
+.panel p.muted {
+  margin: 0 0 16px 0;
+  font-size: 12px;
 }
 
 .group {
@@ -76,7 +81,6 @@ xflip-card {
   color: #94a3b8;
 }
 
-.group select,
 .group input[type='range'],
 .group input[type='file'] {
   width: 100%;
@@ -108,75 +112,6 @@ xflip-card {
   background: #1d4ed8;
 }
 
-hr {
-  border: 0;
-  border-top: 1px solid rgba(148, 163, 184, 0.15);
-  margin: 16px 0;
-}
-
-dl.meta {
-  display: grid;
-  grid-template-columns: max-content 1fr;
-  gap: 4px 12px;
-  font-size: 13px;
-}
-
-dl.meta dt {
-  color: #94a3b8;
-  font-size: 11px;
-  text-transform: uppercase;
-  letter-spacing: 0.06em;
-  align-self: center;
-}
-
-dl.meta dd {
-  margin: 0;
-}
-
-.pill {
-  display: inline-block;
-  font-size: 11px;
-  padding: 2px 8px;
-  border-radius: 999px;
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-  font-weight: 600;
-}
-
-.pill-idle {
-  background: #334155;
-  color: #cbd5e1;
-}
-.pill-loading {
-  background: #1e40af;
-  color: #dbeafe;
-}
-.pill-success {
-  background: #166534;
-  color: #dcfce7;
-}
-.pill-error {
-  background: #991b1b;
-  color: #fee2e2;
-}
-
-pre.json {
-  margin: 0;
-  padding: 8px;
-  background: rgba(2, 6, 23, 0.6);
-  border-radius: 6px;
-  font-size: 11px;
-  line-height: 1.4;
-  white-space: pre-wrap;
-  word-break: break-word;
-  max-height: 220px;
-  overflow: auto;
-}
-
 .muted {
   color: #64748b;
-}
-
-.error {
-  color: #fca5a5;
 }

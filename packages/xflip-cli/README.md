@@ -1,12 +1,9 @@
 # @xflip/cli
 
 Command-line tool for the [xflip](https://github.com/arielfikru/xflip) image
-format. Create, inspect, validate, extract, and re-layer `.xflip` files
-from Node.
+format. Create, inspect, validate, and extract `.xflip` files from Node.
 
-> Status: P4.1–P4.6 complete. Five subcommands shipped:
-> `inspect`, `validate`, `extract`, `create`, `layers add`. CI runs a
-> cross-platform smoke matrix (ubuntu / macOS / windows).
+> Four subcommands shipped: `inspect`, `validate`, `extract`, `create`.
 
 ## Install
 
@@ -128,55 +125,13 @@ Options:
 Supported formats: `png`, `jpeg` (`.jpg`/`.jpeg`), `webp`, `avif`, `jxl`,
 `raw` (`.bin`/`.raw`).
 
-### `xflip layers add <file> --face <front|back> --image <path> --effect-type <name> --output <path>`
-
-Insert a new layer into the file's `fLyr` (front) or `bLyr` (back) chunk,
-creating the chunk when absent. A v1.0 file with no layered chunks is
-promoted to v1.1 on first layer.
-
-```sh
-xflip layers add card.xflip \
-  --face front \
-  --image holo.png \
-  --effect-type holographic \
-  --blend-mode overlay \
-  --opacity 220 \
-  --response holo.json \
-  --output card-holo.xflip
-```
-
-Options:
-
-- `--face <front|back>` — which chunk to grow (required).
-- `--image <path>`, `--effect-type <name>`, `--output <path>` — required.
-- `--format <fmt>` — override format inference.
-- `--blend-mode <name>` — `normal` (default), `multiply`, `screen`,
-  `overlay`, `add`, `color_dodge`, `color_burn`, `soft_light`,
-  `hard_light`, `difference`, `luminosity`, `custom`.
-- `--layer-id <0-255>` — explicit ID (default: next unused).
-- `--opacity <0-255>` — default 255.
-- `--z-order <0-255>` — default `max(existing) + 1`, capped at 255.
-- `--response <path>` — per-layer response parameters (UTF-8 JSON
-  object).
-- `--force` — overwrite `--output`, including writing back to the
-  input path in place.
-- `--strict-ancillary-crc` — fatal on ancillary CRC mismatch.
-
 ## Programmatic use
 
 Each subcommand's pure logic is exported for embedding:
 
 ```ts
 import { readFile, writeFile } from 'node:fs/promises';
-import {
-  addLayer,
-  buildFile,
-  encodeWithLayer,
-  extract,
-  inspect,
-  validate,
-} from '@xflip/cli';
-import { decode } from '@xflip/core';
+import { buildFile, extract, inspect, validate } from '@xflip/cli';
 
 const bytes = await readFile('card.xflip');
 
@@ -193,15 +148,7 @@ const fresh = buildFile({
   width: 512,
   height: 720,
 });
-
-const updated = addLayer(decode(fresh), {
-  face: 'front',
-  image: await readFile('holo.png'),
-  format: 'png',
-  blendMode: 'overlay',
-  effectType: 'holographic',
-});
-await writeFile('card-holo.xflip', encodeWithLayer(updated));
+await writeFile('card.xflip', fresh);
 ```
 
 ## License
