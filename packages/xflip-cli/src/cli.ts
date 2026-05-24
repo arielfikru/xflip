@@ -3,18 +3,10 @@ import { mkdir, readFile, stat, writeFile } from 'node:fs/promises';
 import { join } from 'node:path';
 import { pathToFileURL } from 'node:url';
 import { parseArgs } from 'node:util';
-import {
-  type BlendMode,
-  decode,
-  type FlipAxis,
-  type ImageFormat,
-  XflipError,
-  type XflipLayerResponse,
-} from '@xflip/core';
+import { type FlipAxis, type ImageFormat, XflipError } from '@xflip/core';
 import { buildFile, formatFromExtension, isFlipAxis, isImageFormat } from './create.js';
 import { extract, formatExtractReport } from './extract.js';
 import { formatInspectReport, inspect } from './inspect.js';
-import { addLayer, encodeWithLayer, isBlendMode, type LayerFace } from './layers.js';
 import { formatValidateReport, validate } from './validate.js';
 
 const PROGRAM = 'xflip';
@@ -30,8 +22,6 @@ Commands:
   extract <file> --to D   Write FRNT/BACK (+ META) into directory D
   create --front A --back B --output O --width W --height H
                           Build an .xflip file from two images
-  layers add <file> --face F --image I --effect-type E --output O
-                          Add a layer to fLyr/bLyr (promotes v1.0 → v1.1)
   help [command]          Show help for a command
 
 Run \`${PROGRAM} <command> --help\` for details.
@@ -98,29 +88,6 @@ Options:
   -h, --help                   Show this help text
 `;
 
-const LAYERS_ADD_HELP = `${PROGRAM} layers add <file> --face <front|back> --image <path> --effect-type <name> --output <path> [options]
-
-Insert a new layer into the file's \`fLyr\` (front) or \`bLyr\` (back)
-chunk, creating the chunk when absent. If the input file is v1.0 and
-had no layered chunks, the output is promoted to v1.1. The image format
-is inferred from the \`--image\` extension; override with \`--format\`.
-
-Options:
-      --face <front|back>      Which face to add the layer to (required)
-      --image <path>           Image bytes for the new layer (required)
-      --effect-type <name>     Semantic effect type (required, e.g. holographic, x-custom)
-      --output <path>          Output .xflip path (required; may equal <file> with --force)
-      --format <fmt>           Override inferred image format
-      --blend-mode <name>      Blend mode (default: normal)
-      --layer-id <0-255>       Explicit layer_id; default = next unused
-      --opacity <0-255>        Alpha multiplier (default 255)
-      --z-order <0-255>        Stacking order (default = max + 1)
-      --response <path>        UTF-8 JSON file for per-layer response parameters
-      --force                  Overwrite an existing --output file
-      --strict-ancillary-crc   Treat ancillary CRC mismatches as fatal while reading <file>
-  -h, --help                   Show this help text
-`;
-
 export interface CliIo {
   readonly stdout: (line: string) => void;
   readonly stderr: (line: string) => void;
@@ -151,8 +118,6 @@ export async function run(argv: readonly string[], io: CliIo = defaultIo): Promi
       io.stdout(EXTRACT_HELP);
     } else if (target === 'create') {
       io.stdout(CREATE_HELP);
-    } else if (target === 'layers') {
-      io.stdout(LAYERS_ADD_HELP);
     } else {
       io.stdout(ROOT_HELP);
     }
@@ -178,10 +143,6 @@ export async function run(argv: readonly string[], io: CliIo = defaultIo): Promi
 
   if (command === 'create') {
     return runCreate(rest, io);
-  }
-
-  if (command === 'layers') {
-    return runLayers(rest, io);
   }
 
   io.stderr(`${PROGRAM}: unknown command "${command}"`);
@@ -665,288 +626,6 @@ async function runCreate(argv: readonly string[], io: CliIo): Promise<number> {
 
   io.stdout(
     `Created ${a.output}  (xflip 1.0, ${bytes.byteLength} bytes, ${a.width}x${a.height} ${frontFormat}/${backFormat})`,
-  );
-  return 0;
-}
-
-interface LayersAddArgs {
-  readonly file: string;
-  readonly output: string;
-  readonly face: LayerFace;
-  readonly image: string;
-  readonly effectType: string;
-  readonly formatOverride?: ImageFormat;
-  readonly blendMode: BlendMode;
-  readonly layerId?: number;
-  readonly opacity?: number;
-  readonly zOrder?: number;
-  readonly responsePath?: string;
-  readonly force: boolean;
-  readonly strictAncillaryCrc: boolean;
-}
-
-type LayersAddParseResult =
-  | { readonly kind: 'args'; readonly args: LayersAddArgs }
-  | { readonly kind: 'help' }
-  | { readonly kind: 'exit'; readonly code: number };
-
-function parseUint8Option(raw: string, name: string): number | string {
-  if (!/^[0-9]+$/.test(raw)) return `--${name} must be an integer in [0, 255]`;
-  const n = Number(raw);
-  if (!Number.isInteger(n) || n < 0 || n > 0xff) {
-    return `--${name} must be in the range 0..255`;
-  }
-  return n;
-}
-
-function parseLayersAddArgs(argv: readonly string[], io: CliIo): LayersAddParseResult {
-  let values: {
-    help?: boolean;
-    face?: string;
-    image?: string;
-    'effect-type'?: string;
-    output?: string;
-    format?: string;
-    'blend-mode'?: string;
-    'layer-id'?: string;
-    opacity?: string;
-    'z-order'?: string;
-    response?: string;
-    force?: boolean;
-    'strict-ancillary-crc'?: boolean;
-  };
-  let positionals: string[];
-  try {
-    const parsed = parseArgs({
-      args: [...argv],
-      options: {
-        help: { type: 'boolean', short: 'h' },
-        face: { type: 'string' },
-        image: { type: 'string' },
-        'effect-type': { type: 'string' },
-        output: { type: 'string' },
-        format: { type: 'string' },
-        'blend-mode': { type: 'string' },
-        'layer-id': { type: 'string' },
-        opacity: { type: 'string' },
-        'z-order': { type: 'string' },
-        response: { type: 'string' },
-        force: { type: 'boolean' },
-        'strict-ancillary-crc': { type: 'boolean' },
-      },
-      allowPositionals: true,
-    });
-    values = parsed.values;
-    positionals = parsed.positionals;
-  } catch (err) {
-    io.stderr(`${PROGRAM} layers add: ${(err as Error).message}`);
-    return { kind: 'exit', code: 2 };
-  }
-
-  if (values.help === true) return { kind: 'help' };
-
-  const [file, ...extra] = positionals;
-  if (file === undefined) {
-    io.stderr(`${PROGRAM} layers add: missing <file> argument`);
-    io.stderr(`Run \`${PROGRAM} help layers\` for usage.`);
-    return { kind: 'exit', code: 2 };
-  }
-  if (extra.length > 0) {
-    io.stderr(`${PROGRAM} layers add: unexpected extra argument "${extra[0]}"`);
-    return { kind: 'exit', code: 2 };
-  }
-
-  const required: ReadonlyArray<[string, string | undefined]> = [
-    ['--face', values.face],
-    ['--image', values.image],
-    ['--effect-type', values['effect-type']],
-    ['--output', values.output],
-  ];
-  for (const [name, val] of required) {
-    if (val === undefined || val === '') {
-      io.stderr(`${PROGRAM} layers add: missing required ${name}`);
-      return { kind: 'exit', code: 2 };
-    }
-  }
-
-  const face = values.face as string;
-  if (face !== 'front' && face !== 'back') {
-    io.stderr(`${PROGRAM} layers add: --face must be "front" or "back"`);
-    return { kind: 'exit', code: 2 };
-  }
-
-  let formatOverride: ImageFormat | undefined;
-  if (values.format !== undefined) {
-    if (!isImageFormat(values.format)) {
-      io.stderr(`${PROGRAM} layers add: --format "${values.format}" is not a known format`);
-      return { kind: 'exit', code: 2 };
-    }
-    formatOverride = values.format;
-  }
-
-  let blendMode: BlendMode = 'normal';
-  if (values['blend-mode'] !== undefined) {
-    if (!isBlendMode(values['blend-mode'])) {
-      io.stderr(
-        `${PROGRAM} layers add: --blend-mode "${values['blend-mode']}" is not a known blend mode`,
-      );
-      return { kind: 'exit', code: 2 };
-    }
-    blendMode = values['blend-mode'];
-  }
-
-  let layerId: number | undefined;
-  if (values['layer-id'] !== undefined) {
-    const parsed = parseUint8Option(values['layer-id'], 'layer-id');
-    if (typeof parsed === 'string') {
-      io.stderr(`${PROGRAM} layers add: ${parsed}`);
-      return { kind: 'exit', code: 2 };
-    }
-    layerId = parsed;
-  }
-  let opacity: number | undefined;
-  if (values.opacity !== undefined) {
-    const parsed = parseUint8Option(values.opacity, 'opacity');
-    if (typeof parsed === 'string') {
-      io.stderr(`${PROGRAM} layers add: ${parsed}`);
-      return { kind: 'exit', code: 2 };
-    }
-    opacity = parsed;
-  }
-  let zOrder: number | undefined;
-  if (values['z-order'] !== undefined) {
-    const parsed = parseUint8Option(values['z-order'], 'z-order');
-    if (typeof parsed === 'string') {
-      io.stderr(`${PROGRAM} layers add: ${parsed}`);
-      return { kind: 'exit', code: 2 };
-    }
-    zOrder = parsed;
-  }
-
-  const args: LayersAddArgs = {
-    file,
-    output: values.output as string,
-    face: face as LayerFace,
-    image: values.image as string,
-    effectType: values['effect-type'] as string,
-    blendMode,
-    force: values.force === true,
-    strictAncillaryCrc: values['strict-ancillary-crc'] === true,
-    ...(formatOverride !== undefined ? { formatOverride } : {}),
-    ...(layerId !== undefined ? { layerId } : {}),
-    ...(opacity !== undefined ? { opacity } : {}),
-    ...(zOrder !== undefined ? { zOrder } : {}),
-    ...(values.response !== undefined ? { responsePath: values.response } : {}),
-  };
-  return { kind: 'args', args };
-}
-
-async function runLayers(argv: readonly string[], io: CliIo): Promise<number> {
-  const [sub, ...rest] = argv;
-  if (sub === undefined || sub === '--help' || sub === '-h' || sub === 'help') {
-    io.stdout(LAYERS_ADD_HELP);
-    return sub === undefined ? 2 : 0;
-  }
-  if (sub !== 'add') {
-    io.stderr(`${PROGRAM} layers: unknown subcommand "${sub}"`);
-    io.stderr(`Run \`${PROGRAM} help layers\` for usage.`);
-    return 2;
-  }
-  return runLayersAdd(rest, io);
-}
-
-async function runLayersAdd(argv: readonly string[], io: CliIo): Promise<number> {
-  const parsed = parseLayersAddArgs(argv, io);
-  if (parsed.kind === 'help') {
-    io.stdout(LAYERS_ADD_HELP);
-    return 0;
-  }
-  if (parsed.kind === 'exit') return parsed.code;
-  const a = parsed.args;
-
-  const format = a.formatOverride ?? formatFromExtension(a.image);
-  if (format === undefined) {
-    io.stderr(`${PROGRAM} layers add: cannot infer format for "${a.image}"; pass --format`);
-    return 2;
-  }
-
-  const fileBytes = await readFileOrReport(a.file, io, 'layers add');
-  if (typeof fileBytes === 'number') return fileBytes;
-  const imageBytes = await readFileOrReport(a.image, io, 'layers add');
-  if (typeof imageBytes === 'number') return imageBytes;
-
-  let response: XflipLayerResponse | undefined;
-  if (a.responsePath !== undefined) {
-    const read = await readFileOrReport(a.responsePath, io, 'layers add');
-    if (typeof read === 'number') return read;
-    let text: string;
-    try {
-      text = new TextDecoder('utf-8', { fatal: true }).decode(read);
-    } catch (err) {
-      io.stderr(
-        `${PROGRAM} layers add: --response "${a.responsePath}" is not valid UTF-8: ${(err as Error).message}`,
-      );
-      return 1;
-    }
-    let json: unknown;
-    try {
-      json = JSON.parse(text);
-    } catch (err) {
-      io.stderr(
-        `${PROGRAM} layers add: --response "${a.responsePath}" is not valid JSON: ${(err as Error).message}`,
-      );
-      return 1;
-    }
-    if (json === null || typeof json !== 'object' || Array.isArray(json)) {
-      io.stderr(`${PROGRAM} layers add: --response root must be a JSON object`);
-      return 1;
-    }
-    response = json as XflipLayerResponse;
-  }
-
-  let outBytes: Uint8Array;
-  try {
-    const file = decode(fileBytes, { strictAncillaryCrc: a.strictAncillaryCrc });
-    const updated = addLayer(file, {
-      face: a.face,
-      image: imageBytes,
-      format,
-      blendMode: a.blendMode,
-      effectType: a.effectType,
-      ...(a.layerId !== undefined ? { layerId: a.layerId } : {}),
-      ...(a.opacity !== undefined ? { opacity: a.opacity } : {}),
-      ...(a.zOrder !== undefined ? { zOrder: a.zOrder } : {}),
-      ...(response !== undefined ? { response } : {}),
-    });
-    outBytes = encodeWithLayer(updated);
-  } catch (err) {
-    if (err instanceof XflipError) {
-      io.stderr(`${PROGRAM} layers add: ${err.name}: ${err.message}`);
-      return 1;
-    }
-    throw err;
-  }
-
-  if (!a.force && a.output !== a.file && (await pathExists(a.output))) {
-    io.stderr(`${PROGRAM} layers add: refusing to overwrite "${a.output}" (use --force)`);
-    return 1;
-  }
-  if (a.output === a.file && !a.force) {
-    io.stderr(
-      `${PROGRAM} layers add: refusing to overwrite input "${a.output}" in place (use --force)`,
-    );
-    return 1;
-  }
-
-  try {
-    await writeFile(a.output, outBytes);
-  } catch (err) {
-    io.stderr(`${PROGRAM} layers add: cannot write "${a.output}": ${(err as Error).message}`);
-    return 1;
-  }
-
-  io.stdout(
-    `Added layer to ${a.face} face → ${a.output}  (xflip 1.1, ${outBytes.byteLength} bytes, effect=${a.effectType}, blend=${a.blendMode})`,
   );
   return 0;
 }

@@ -3,10 +3,42 @@
 > Single source of truth for project progress. Updated after every task.
 > Schema is stable; agents append rows rather than rewriting history.
 
-**Last updated:** 2026-05-20
-**Current phase:** P9 (pose-rig studio)
-**Current task:** P9 COMPLETE
-**Status:** All P9.0–P9.7 tasks shipped. Full pose-rig studio at apps/studio; sample card at sample-data/head-turn.xflip. P6.2 remains deferred. `apps/playground` ships a Vite + React app that consumes `@xflip/react`: source-aliased workspace deps (HMR edge-to-edge), generated fixtures via `scripts/build-fixtures.mjs` (synthesizes solid-color PNGs in pure Node + zlib, then encodes flat + layered `.xflip` files via `@xflip/core`), a dropdown to pick between samples, a file-input for uploading custom `.xflip` (revokes blob URLs on replacement), a tilt-max slider, Flip + Enable-gyroscope buttons that call viewer methods through a forwarded ref, and a sidebar showing `useXflip` status + decoded JSON. Verified visually in Chromium: blue front renders, `xflip-load` fires (`v1.1 · 240×336`). Next: P6.2 expands the sample gallery and polishes the layout. `<XflipCard>` test suite widened to cover tiltMax prop updates, className/style/hidden/aria-label forwarding (React's custom-element class-attr heuristic accommodated), element identity across `src` changes, ref detach on unmount, callback-ref clearing, and listener swap when `onLoad` reference changes. Suite at 392 tests (+6); biome + typecheck clean. Next: P5.6 ships the package README with copy-paste examples for `<XflipCard>` and `useXflip`.
+**Last updated:** 2026-05-24
+**Current phase:** RIP (layering rollback)
+**Current task:** RIP COMPLETE — flat v1.0 + built-in holo viewer
+**Status:** User decision (2026-05-24): drop all layering. App was too complex for
+their goal — a single card with a holo / light-reflection effect. Scope reset to
+flat v1.0 + built-in holographic overlay in the viewer.
+
+Demolition delivered:
+- `apps/studio` removed entirely (layering compositor, pose-rig editor — dead).
+- `apps/playground` trimmed: single sample (`sample.xflip`), tilt slider, file
+  upload, Flip + Enable-gyroscope buttons. No more sample dropdown, no JSON
+  debug pane, no layered/TCG/holo build scripts.
+- `@xflip/core`: deleted `layers.ts`, `pose.ts`, all related tests. Trimmed
+  `types.ts` (no `XflipLayer*`, `XflipPose*`, `XflipHefx`, `BlendMode`,
+  `PoseKeyframe`, `PoseGridSize`). Decode/encode are flat-only. `XflipFile`
+  surface back to v1.0. `KNOWN_ANCILLARY` no longer accepts `fLyr`/`bLyr`/
+  `hEfx`/`pOse`.
+- `@xflip/viewer`: removed `#renderLayers`, `#applyHefx`, pose sampler. Added
+  always-on holographic CSS overlay (radial + conic gradient, opacity follows
+  `--xflip-tilt-magnitude`, `mix-blend-mode: color-dodge`). No format flag —
+  every card gets the sheen.
+- `@xflip/cli`: deleted `layers add` subcommand + `layers.ts`. Inspect /
+  validate / extract / create kept.
+- Integration test `tests/layered.test.ts` removed.
+
+Quality gates: `pnpm typecheck` PASS; `pnpm test` 313/313 PASS (was 350; net
+-37 from layered-test deletes, +1 from new holo overlay assertion).
+
+Still TODO (deferred):
+- Spec doc `xflip-spec-v0.2.md` still describes §5.6 `fLyr`/`bLyr`, §5.7 `hEfx`,
+  §5.8 `pOse`. Needs rewrite to flat v1.0 only.
+- `packages/xflip-cli/README.md` still documents `layers add` examples.
+- `AGENTS.md` Section 5 phase map still lists P2 (layered effects), P9 (pose
+  rig) as in-scope. Needs trimming.
+- `apps/playground/styles.css` may have unused `.json`, `.pill`, `.meta` rules
+  from the deleted debug pane.
 
 **P4.6 status (history):** CI `cli-smoke` job builds the CLI bin and drives `scripts/cli-smoke.mjs` end-to-end on ubuntu / macOS / windows (help, create, inspect, validate, extract, layers add, validate of layered output, META round-trip, unknown-command exit-2). Local: 9/9 checks pass.
 
@@ -18,7 +50,9 @@
 
 ## Quick Resume Pointer
 
-**Next Task:** `P7` — Documentation site (or continue P6 playground polish)
+**Next Task:** Confirm scope of doc-pass cleanup (spec, README, AGENTS.md,
+playground CSS) — see "Still TODO" above. Nothing in the source tree depends
+on layered surface anymore, so the doc-pass is non-blocking.
 
 **P9 post-ship additions:**
 - Preview modal: `PreviewModal.tsx` encodes project to xflip blob → loads in `<xflip-card tilt-max={30}>` web component; TopBar "Preview" button (green) triggers it; backdrop+Escape close.

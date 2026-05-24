@@ -1,5 +1,5 @@
 /**
- * `@xflip/core` — encoder and decoder for the xflip image format.
+ * `@xflip/core` — encoder and decoder for the xflip image format (flat v1.0).
  *
  * Zero runtime dependencies. Targets Node 20+ and evergreen browsers.
  *
@@ -28,27 +28,11 @@ export {
   XflipError,
   XflipParseError,
 } from './errors.js';
-export { parseHefx, parseLayerChunk, serializeHefx, serializeLayerChunk } from './layers.js';
-export type { ParsedPoseChunk } from './pose.js';
-export {
-  identityPose,
-  parsePoseChunk,
-  samplePose,
-  serializePoseChunk,
-} from './pose.js';
 export type {
-  BlendMode,
   ChunkType,
   FlipAxis,
   ImageFormat,
-  PoseGridSize,
-  PoseKeyframe,
   XflipFile,
   XflipHead,
-  XflipHefx,
-  XflipLayer,
-  XflipLayerChunk,
-  XflipLayerResponse,
-  XflipPose,
 } from './types.js';
-export { BLEND_MODE_CODES, FLIP_AXIS_CODES, IMAGE_FORMAT_CODES } from './types.js';
+export { FLIP_AXIS_CODES, IMAGE_FORMAT_CODES } from './types.js';

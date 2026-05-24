@@ -19,16 +19,7 @@ const SUPPORTED_MAJOR_VERSION = 1;
 const MAX_CHUNK_PAYLOAD = 0x7fffffff; // spec §3.2: LENGTH is uint32 max 2^31-1
 
 const KNOWN_CRITICAL: ReadonlySet<string> = new Set(['HEAD', 'FRNT', 'BACK', 'ENDX']);
-const KNOWN_ANCILLARY: ReadonlySet<string> = new Set([
-  'META',
-  'tHmb',
-  'fLip',
-  'sIgn',
-  'eDge',
-  'fLyr',
-  'bLyr',
-  'hEfx',
-]);
+const KNOWN_ANCILLARY: ReadonlySet<string> = new Set(['META', 'tHmb', 'fLip', 'sIgn', 'eDge']);
 
 const isUppercase = (charCode: number): boolean => charCode >= 0x41 && charCode <= 0x5a;
 const isLowercase = (charCode: number): boolean => charCode >= 0x61 && charCode <= 0x7a;

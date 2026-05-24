@@ -1,17 +1,13 @@
-import { useXflip, XflipCard, type XflipCardElement } from '@xflip/react';
+import { XflipCard, type XflipCardElement } from '@xflip/react';
 import { useEffect, useRef, useState } from 'react';
 
-const SAMPLES = [{ label: 'Flat (blue / red)', src: '/sample.xflip' }] as const;
+const DEFAULT_SRC = '/sample.xflip';
 
 export function App(): JSX.Element {
-  const [src, setSrc] = useState<string>(SAMPLES[0].src);
+  const [src, setSrc] = useState<string>(DEFAULT_SRC);
   const [tiltMax, setTiltMax] = useState<number>(14);
-  const [lastEvent, setLastEvent] = useState<string>('—');
   const cardRef = useRef<XflipCardElement | null>(null);
 
-  const { file, error, status } = useXflip(src);
-
-  // Revoke object URLs created from the file input on unmount / replacement.
   const lastBlobUrl = useRef<string | null>(null);
   useEffect(() => {
     return () => {
@@ -31,39 +27,12 @@ export function App(): JSX.Element {
   return (
     <main className="layout">
       <section className="stage">
-        <XflipCard
-          ref={cardRef}
-          src={src}
-          tiltMax={tiltMax}
-          onLoad={(f) =>
-            setLastEvent(
-              `load · v${f.versionMajor}.${f.versionMinor} · ${f.head.width}×${f.head.height}`,
-            )
-          }
-          onError={(err) => setLastEvent(`error · ${err.message}`)}
-        />
+        <XflipCard ref={cardRef} src={src} tiltMax={tiltMax} />
       </section>
 
       <aside className="panel">
-        <h1>xflip playground</h1>
-
-        <div className="group">
-          <label htmlFor="sample">Sample</label>
-          <select
-            id="sample"
-            value={SAMPLES.some((s) => s.src === src) ? src : ''}
-            onChange={(ev) => setSrc(ev.target.value)}
-          >
-            {SAMPLES.map((s) => (
-              <option key={s.src} value={s.src}>
-                {s.label}
-              </option>
-            ))}
-            {!SAMPLES.some((s) => s.src === src) ? (
-              <option value={src}>Custom (uploaded)</option>
-            ) : null}
-          </select>
-        </div>
+        <h1>xflip</h1>
+        <p className="muted">flip card with built-in holographic sheen</p>
 
         <div className="group">
           <label htmlFor="upload">Upload .xflip</label>
@@ -91,39 +60,6 @@ export function App(): JSX.Element {
             Enable gyroscope
           </button>
         </div>
-
-        <hr />
-
-        <dl className="meta">
-          <dt>useXflip status</dt>
-          <dd>
-            <span className={`pill pill-${status}`}>{status}</span>
-          </dd>
-          <dt>Last event</dt>
-          <dd>{lastEvent}</dd>
-          <dt>Decoded</dt>
-          <dd>
-            {status === 'success' && file ? (
-              <pre className="json">
-                {JSON.stringify(
-                  {
-                    version: `${file.versionMajor}.${file.versionMinor}`,
-                    head: file.head,
-                    frontLayers: file.frontLayers?.layers.length ?? 0,
-                    backLayers: file.backLayers?.layers.length ?? 0,
-                    effects: file.effects ?? null,
-                  },
-                  null,
-                  2,
-                )}
-              </pre>
-            ) : status === 'error' ? (
-              <span className="error">{error?.message}</span>
-            ) : (
-              <span className="muted">{status === 'loading' ? 'fetching…' : '—'}</span>
-            )}
-          </dd>
-        </dl>
       </aside>
     </main>
   );

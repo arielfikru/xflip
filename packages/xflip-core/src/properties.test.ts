@@ -28,9 +28,6 @@ const AXIS_NAMES = Object.keys(FLIP_AXIS_CODES) as FlipAxis[];
 const arbBytes = (maxLength: number) =>
   fc.uint8Array({ minLength: 0, maxLength }).map((a) => new Uint8Array(a));
 
-// Layered chunks (`fLyr`/`bLyr`/`hEfx`) are excluded: as of v1.1 they have
-// typed-field semantics and dedicated spec positions, so they no longer
-// round-trip through `ancillary` insertion order.
 const arbAncillaryKey = fc.constantFrom('META', 'tHmb', 'fLip', 'eDge');
 
 const arbAncillary = fc

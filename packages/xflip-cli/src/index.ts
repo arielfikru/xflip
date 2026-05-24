@@ -14,7 +14,5 @@ export type { ExtractedFile, ExtractOptions, ExtractResult } from './extract.js'
 export { extract } from './extract.js';
 export type { ChunkSummary, InspectOptions, InspectResult } from './inspect.js';
 export { inspect } from './inspect.js';
-export type { AddLayerInputs, LayerFace } from './layers.js';
-export { addLayer, encodeWithLayer, isBlendMode } from './layers.js';
 export type { ValidateOptions, ValidateResult } from './validate.js';
 export { validate } from './validate.js';

@@ -1,4 +1,4 @@
-// Generates apps/playground/public/sample.xflip + sample-layered.xflip.
+// Generates apps/playground/public/sample.xflip (flat v1.0).
 //
 // The viewer renders FRNT/BACK payloads through `<img>` blob URLs, so the
 // payloads need to be real PNGs. We synthesize solid-color PNGs inline
@@ -103,45 +103,4 @@ const flat = encode({
 
 writeFileSync(join(outDir, 'sample.xflip'), flat);
 
-const overlayPng = solidPng(W, H, [255, 255, 255, 64]); // translucent white sheen
-const layered = encode({
-  versionMajor: 1,
-  versionMinor: 1,
-  head: {
-    width: W,
-    height: H,
-    frontFormat: 'png',
-    backFormat: 'png',
-    flipAxis: 'horizontal',
-    flags: 0,
-  },
-  front: frontPng,
-  back: backPng,
-  frontLayers: {
-    version: 1,
-    flags: 0,
-    layers: [
-      {
-        layerId: 0,
-        format: 'png',
-        blendMode: 'screen',
-        effectType: 'holographic',
-        opacity: 200,
-        zOrder: 0,
-        response: {},
-        imageData: overlayPng,
-      },
-    ],
-  },
-  effects: {
-    interaction_modes: ['pointer', 'gyroscope'],
-    response_curve: 'easeOutQuad',
-    intensity: 0.8,
-  },
-});
-
-writeFileSync(join(outDir, 'sample-layered.xflip'), layered);
-
-console.log(
-  `built ${flat.length} B sample.xflip + ${layered.length} B sample-layered.xflip`,
-);
+console.log(`built ${flat.length} B sample.xflip`);

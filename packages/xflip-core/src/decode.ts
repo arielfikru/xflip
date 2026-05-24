@@ -3,15 +3,11 @@
  *
  * Builds on {@link parseChunks}: lifts the raw chunk list into a domain
  * object, parses the HEAD payload, enforces chunk-ordering invariants, and
- * surfaces optional ancillaries. v1.0 surface only — layered effect chunks
- * (`fLyr`, `bLyr`, `hEfx`) are preserved as ancillary payloads but not
- * interpreted.
+ * surfaces optional ancillaries. Flat v1.0 surface only.
  */
 
 import { type ParsedChunk, type ParseOptions, parseChunks } from './chunks.js';
 import { XflipParseError } from './errors.js';
-import { parseHefx, parseLayerChunk } from './layers.js';
-import { parsePoseChunk } from './pose.js';
 import {
   FLIP_AXIS_CODES,
   type FlipAxis,
@@ -19,10 +15,6 @@ import {
   type ImageFormat,
   type XflipFile,
   type XflipHead,
-  type XflipHefx,
-  type XflipLayer,
-  type XflipLayerChunk,
-  type XflipPose,
 } from './types.js';
 
 const HEAD_PAYLOAD_LENGTH = 12;
@@ -72,7 +64,7 @@ export function decode(bytes: Uint8Array, options?: ParseOptions): XflipFile {
   const frnt = parsed.chunks[frntIndex] as ParsedChunk;
   const back = parsed.chunks[backIndex] as ParsedChunk;
 
-  const { ancillary, frontLayers, backLayers, effects } = collectAncillary(parsed.chunks);
+  const ancillary = collectAncillary(parsed.chunks);
 
   const file: XflipFile = {
     versionMajor: parsed.versionMajor,
@@ -81,9 +73,6 @@ export function decode(bytes: Uint8Array, options?: ParseOptions): XflipFile {
     front: copy(frnt.payload),
     back: copy(back.payload),
   };
-  if (frontLayers) file.frontLayers = frontLayers;
-  if (backLayers) file.backLayers = backLayers;
-  if (effects) file.effects = effects;
   if (ancillary.size > 0) file.ancillary = ancillary;
   return file;
 }
@@ -147,82 +136,13 @@ const lookupFlipAxis = (code: number, offset: number): FlipAxis => {
   return name;
 };
 
-interface AncillaryBundle {
-  ancillary: Map<string, Uint8Array>;
-  frontLayers?: XflipLayerChunk;
-  backLayers?: XflipLayerChunk;
-  effects?: XflipHefx;
-}
-
-const collectAncillary = (chunks: readonly ParsedChunk[]): AncillaryBundle => {
-  const bundle: AncillaryBundle = { ancillary: new Map<string, Uint8Array>() };
-  // Accumulate pOse payloads first so they can be attached after layer parse.
-  const poseMap = new Map<string, XflipPose>(); // key: `${face}:${layerId}`
-
+const collectAncillary = (chunks: readonly ParsedChunk[]): Map<string, Uint8Array> => {
+  const ancillary = new Map<string, Uint8Array>();
   for (const chunk of chunks) {
     if (chunk.critical) continue;
-    if (chunk.type === 'fLyr') {
-      const lifted = tryLift(() => parseLayerChunk(chunk.payload));
-      if (lifted) {
-        bundle.frontLayers = lifted;
-        bundle.ancillary.delete('fLyr');
-        continue;
-      }
-    } else if (chunk.type === 'bLyr') {
-      const lifted = tryLift(() => parseLayerChunk(chunk.payload));
-      if (lifted) {
-        bundle.backLayers = lifted;
-        bundle.ancillary.delete('bLyr');
-        continue;
-      }
-    } else if (chunk.type === 'hEfx') {
-      const lifted = tryLift(() => parseHefx(chunk.payload));
-      if (lifted) {
-        bundle.effects = lifted;
-        bundle.ancillary.delete('hEfx');
-        continue;
-      }
-    } else if (chunk.type === 'pOse') {
-      const lifted = tryLift(() => parsePoseChunk(chunk.payload));
-      if (lifted) {
-        poseMap.set(`${lifted.face}:${lifted.layerId}`, lifted.pose);
-        continue;
-      }
-    }
-    bundle.ancillary.set(chunk.type, copy(chunk.payload));
+    ancillary.set(chunk.type, copy(chunk.payload));
   }
-
-  if (poseMap.size > 0) {
-    if (bundle.frontLayers) {
-      bundle.frontLayers = attachPoses(bundle.frontLayers, 'front', poseMap);
-    }
-    if (bundle.backLayers) {
-      bundle.backLayers = attachPoses(bundle.backLayers, 'back', poseMap);
-    }
-  }
-
-  return bundle;
-};
-
-const attachPoses = (
-  chunk: XflipLayerChunk,
-  face: 'front' | 'back',
-  poseMap: ReadonlyMap<string, XflipPose>,
-): XflipLayerChunk => {
-  const layers: XflipLayer[] = chunk.layers.map((layer) => {
-    const pose = poseMap.get(`${face}:${layer.layerId}`);
-    if (!pose) return layer;
-    return { ...layer, pose };
-  });
-  return { ...chunk, layers };
-};
-
-const tryLift = <T>(fn: () => T): T | undefined => {
-  try {
-    return fn();
-  } catch {
-    return undefined;
-  }
+  return ancillary;
 };
 
 const copy = (view: Uint8Array): Uint8Array => {
