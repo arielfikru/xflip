@@ -1,11 +1,7 @@
 import { useXflip, XflipCard, type XflipCardElement } from '@xflip/react';
 import { useEffect, useRef, useState } from 'react';
 
-const SAMPLES = [
-  { label: 'Flat (blue / red)', src: '/sample.xflip' },
-  { label: 'Layered (holographic sheen)', src: '/sample-layered.xflip' },
-  { label: 'Photo + holo (sample.jpg)', src: '/sample-holo.xflip' },
-] as const;
+const SAMPLES = [{ label: 'Flat (blue / red)', src: '/sample.xflip' }] as const;
 
 export function App(): JSX.Element {
   const [src, setSrc] = useState<string>(SAMPLES[0].src);

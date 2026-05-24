@@ -5,14 +5,13 @@
   "description": "Interactive demo app for @xflip/react",
   "type": "module",
   "scripts": {
-    "predev": "pnpm --filter @xflip/core build && node scripts/build-fixtures.mjs && node scripts/build-holo.mjs",
+    "predev": "pnpm --filter @xflip/core build && node scripts/build-fixtures.mjs",
     "dev": "vite",
     "prebuild": "pnpm --filter @xflip/core build && node scripts/build-fixtures.mjs",
     "build": "vite build",
     "preview": "vite preview",
     "typecheck": "tsc --noEmit",
-    "fixtures": "pnpm --filter @xflip/core build && node scripts/build-fixtures.mjs && node scripts/build-holo.mjs",
-    "fixtures:holo": "pnpm --filter @xflip/core build && node scripts/build-holo.mjs",
+    "fixtures": "pnpm --filter @xflip/core build && node scripts/build-fixtures.mjs",
     "test": "vitest run --passWithNoTests"
   },
   "dependencies": {
