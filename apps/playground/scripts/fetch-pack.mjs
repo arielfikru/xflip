@@ -4,11 +4,13 @@
 // index.json describing each card. The local `encode-pack.mjs` stage then
 // resizes and encodes them into .xflip offline.
 //
-//   node fetch-pack.mjs <outDir> <baseTag> [--solo]
+//   node fetch-pack.mjs <outDir> <baseTag> [--solo] [--ban tagA,tagB,...]
 //
 // Anonymous danbooru allows only 2 search tags, so we query
 // `score:LO..HI <baseTag>` and filter rating=general client-side. Pass --solo
-// to additionally require the `solo` tag (single-character packs).
+// to additionally require the `solo` tag (single-character packs). Pass
+// --ban with a comma-separated list to reject posts carrying any of those tags
+// (also client-side, so it doesn't count against the 2-tag query limit).
 //
 // Rarity by score: C 10-19 · R 20-29 · SR 30-39 · SSR 40-69 · UR 70+
 
@@ -18,6 +20,8 @@ import { join } from 'node:path';
 const outDir = process.argv[2] ?? './pack-src';
 const baseTag = process.argv[3] ?? '1girl';
 const requireSolo = process.argv.includes('--solo');
+const banIdx = process.argv.indexOf('--ban');
+const banned = banIdx !== -1 ? (process.argv[banIdx + 1] ?? '').split(',').filter(Boolean) : [];
 mkdirSync(outDir, { recursive: true });
 
 const USER_AGENT = 'xflip-gacha-demo/1.0 (card-game thumbnail fetch)';
@@ -79,7 +83,9 @@ async function collectTier(tier) {
     for (const post of posts) {
       if (picked.length >= tier.count) break;
       if (post.rating !== 'g') continue;
-      if (requireSolo && !/\bsolo\b/.test(String(post.tag_string ?? ''))) continue;
+      const tags = new Set(String(post.tag_string ?? '').split(/\s+/));
+      if (requireSolo && !tags.has('solo')) continue;
+      if (banned.some((b) => tags.has(b))) continue;
       const thumb = thumbUrl(post);
       if (!thumb || seen.has(post.id)) continue;
       seen.add(post.id);
@@ -115,7 +121,9 @@ for (const tier of TIERS) {
 }
 
 writeFileSync(join(outDir, 'index.json'), JSON.stringify(index, null, 2));
-console.log(`fetched ${index.length} thumbnails (tag="${baseTag}", solo=${requireSolo}) → ${outDir}`);
+console.log(
+  `fetched ${index.length} thumbnails (tag="${baseTag}", solo=${requireSolo}, ban=[${banned.join(',')}]) → ${outDir}`,
+);
 for (const tier of TIERS) {
   console.log(`  ${tier.tier}: ${index.filter((x) => x.tier === tier.tier).length}`);
 }

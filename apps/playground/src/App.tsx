@@ -1,6 +1,6 @@
 import { XflipCard } from '@xflip/react';
 import { type FormEvent, useEffect, useMemo, useState } from 'react';
-import { currentUser, login, logout, register } from './auth';
+import { addCards, fetchCollection, login, logout, me, register } from './api';
 
 type Rarity = 'c' | 'r' | 'sr' | 'ssr' | 'ur';
 
@@ -27,30 +27,16 @@ interface CardDef {
 type Phase = 'home' | 'opening' | 'reveal' | 'summary' | 'collection' | 'index';
 
 const RARITY_ORDER: Record<Rarity, number> = { c: 0, r: 1, sr: 2, ssr: 3, ur: 4 };
+// Pull rates: SR+ ~6.8%/card → ~35% chance a pack holds any SR+. No pity floor.
+const RARITY_RATES: Record<Rarity, number> = {
+  c: 0.7,
+  r: 0.232,
+  sr: 0.05,
+  ssr: 0.015,
+  ur: 0.003,
+};
 const PACK_SIZE = 6;
 const GOD_PACK_RATE = 0.01; // 1% — every card SR or better
-const COLLECTION_PREFIX = 'xflip-gacha-collection';
-
-function collectionKey(user: string): string {
-  return `${COLLECTION_PREFIX}:${user}`;
-}
-
-function loadCollection(user: string): Record<string, number> {
-  try {
-    const raw = localStorage.getItem(collectionKey(user));
-    return raw ? (JSON.parse(raw) as Record<string, number>) : {};
-  } catch {
-    return {};
-  }
-}
-
-function saveCollection(user: string, c: Record<string, number>): void {
-  try {
-    localStorage.setItem(collectionKey(user), JSON.stringify(c));
-  } catch {
-    /* ignore quota / unavailable */
-  }
-}
 
 function pickRarity(rates: { rarity: Rarity; rate: number }[]): Rarity {
   const total = rates.reduce((a, x) => a + x.rate, 0);
@@ -63,9 +49,9 @@ function pickRarity(rates: { rarity: Rarity; rate: number }[]): Rarity {
 }
 
 function ratesOf(pool: CardDef[]): { rarity: Rarity; rate: number }[] {
-  const seen = new Map<Rarity, number>();
-  for (const c of pool) if (!seen.has(c.rarity)) seen.set(c.rarity, c.rate);
-  return [...seen.entries()].map(([rarity, rate]) => ({ rarity, rate }));
+  const seen = new Set<Rarity>();
+  for (const c of pool) seen.add(c.rarity);
+  return [...seen].map((rarity) => ({ rarity, rate: RARITY_RATES[rarity] }));
 }
 
 function drawFrom(pool: CardDef[], rates: { rarity: Rarity; rate: number }[]): CardDef[] {
@@ -86,17 +72,9 @@ function drawFrom(pool: CardDef[], rates: { rarity: Rarity; rate: number }[]): C
   return cards;
 }
 
-// Normal pack: weighted across all tiers, with a pity SR+ guarantee.
+// Normal pack: weighted across all tiers. No pity — most packs are C/R.
 function drawPack(pool: CardDef[]): CardDef[] {
   const cards = drawFrom(pool, ratesOf(pool));
-  if (cards.length && !cards.some((c) => RARITY_ORDER[c.rarity] >= 2)) {
-    const srPlus = ratesOf(pool).filter((x) => RARITY_ORDER[x.rarity] >= 2);
-    const pity = drawFrom(
-      pool.filter((c) => RARITY_ORDER[c.rarity] >= 2),
-      srPlus,
-    )[0];
-    if (pity) cards[PACK_SIZE - 1] = pity;
-  }
   cards.sort((a, b) => RARITY_ORDER[a.rarity] - RARITY_ORDER[b.rarity]);
   return cards;
 }
@@ -179,14 +157,15 @@ function AuthScreen({ onAuthed }: { onAuthed: (user: string) => void }): JSX.Ele
             {busy ? '…' : mode === 'login' ? 'Log in' : 'Create account'}
           </button>
         </form>
-        <p className="hint warn">Local demo accounts only — stored in this browser.</p>
+        <p className="hint warn">Your collection syncs to your account.</p>
       </div>
     </main>
   );
 }
 
 export function App(): JSX.Element {
-  const [user, setUser] = useState<string | null>(currentUser());
+  const [user, setUser] = useState<string | null>(null);
+  const [authReady, setAuthReady] = useState(false);
   const [packs, setPacks] = useState<PackDef[]>([]);
   const [pool, setPool] = useState<CardDef[]>([]);
   const [phase, setPhase] = useState<Phase>('home');
@@ -197,6 +176,7 @@ export function App(): JSX.Element {
   const [flipped, setFlipped] = useState(false); // current card revealed?
   const [exiting, setExiting] = useState(false); // current card sliding away?
   const [collection, setCollection] = useState<Record<string, number>>({});
+  const [preOwned, setPreOwned] = useState<Set<string>>(new Set());
   const [detail, setDetail] = useState<CardDef | null>(null);
 
   useEffect(() => {
@@ -219,7 +199,20 @@ export function App(): JSX.Element {
   }, []);
 
   useEffect(() => {
-    setCollection(user ? loadCollection(user) : {});
+    me()
+      .then(setUser)
+      .catch(() => setUser(null))
+      .finally(() => setAuthReady(true));
+  }, []);
+
+  useEffect(() => {
+    if (!user) {
+      setCollection({});
+      return;
+    }
+    fetchCollection()
+      .then(setCollection)
+      .catch(() => setCollection({}));
   }, [user]);
 
   const byGid = useMemo(() => {
@@ -235,13 +228,21 @@ export function App(): JSX.Element {
     const god = Math.random() < GOD_PACK_RATE;
     const drawn = god ? drawGodPack(subset) : drawPack(subset);
 
-    // Auto-save: gacha results always land in the collection immediately.
+    // Snapshot what was owned before this pack, so we can flag NEW cards.
+    setPreOwned(new Set(Object.keys(collection).filter((g) => (collection[g] ?? 0) > 0)));
+
+    // Auto-save: optimistic local bump, then persist to the server. The POST
+    // returns the authoritative collection, so reconcile when it lands.
     setCollection((prev) => {
       const next = { ...prev };
       for (const card of drawn) next[card.gid] = (next[card.gid] ?? 0) + 1;
-      saveCollection(user, next);
       return next;
     });
+    addCards(drawn.map((card) => card.gid))
+      .then(setCollection)
+      .catch(() => {
+        /* keep optimistic state; will resync on next load */
+      });
 
     setActivePack(p);
     setIsGod(god);
@@ -269,20 +270,19 @@ export function App(): JSX.Element {
   }
 
   function doLogout(): void {
-    logout();
+    logout().catch(() => {});
     setUser(null);
     setPhase('home');
   }
 
-  const bestRarity = useMemo<Rarity>(() => {
-    let best: Rarity = 'r';
-    for (const { card } of pack)
-      if (RARITY_ORDER[card.rarity] > RARITY_ORDER[best]) best = card.rarity;
-    return best;
-  }, [pack]);
-
   const backSrc = activePack?.back ?? 'gacha/waifu/back.jpg';
 
+  if (!authReady)
+    return (
+      <main className="gacha auth-page">
+        <p className="hint">Loading…</p>
+      </main>
+    );
   if (!user) return <AuthScreen onAuthed={setUser} />;
 
   return (
@@ -357,7 +357,7 @@ export function App(): JSX.Element {
             {pool.length ? (
               Object.entries(
                 pool.reduce<Record<string, { label: string; rate: number }>>((acc, c) => {
-                  acc[c.rarity] = { label: c.rarityLabel, rate: c.rate };
+                  acc[c.rarity] = { label: c.rarityLabel, rate: RARITY_RATES[c.rarity] };
                   return acc;
                 }, {}),
               )
@@ -376,7 +376,7 @@ export function App(): JSX.Element {
 
       {phase === 'opening' && (
         <section className="opening">
-          <div className={`rip-scene rarity-${bestRarity} ${isGod ? 'god' : ''}`}>
+          <div className={`rip-scene ${isGod ? 'god' : ''}`}>
             <div className="rip-flash" />
             <div className="pack-half top">
               <div className="pack-face">
@@ -419,6 +419,7 @@ export function App(): JSX.Element {
                   ? {
                       transform: `translateX(${exitDir * 130}%) rotate(${exitDir * 12}deg)`,
                       opacity: 0,
+                      zIndex: 20,
                     }
                   : { transform: 'none', opacity: 1, zIndex: 10 }
                 : {
@@ -446,6 +447,7 @@ export function App(): JSX.Element {
                     <div className="deck-front">
                       {isActive && flipped && (
                         <>
+                          {!preOwned.has(c.gid) && <span className="new-badge">NEW</span>}
                           <span className={`badge badge-${c.rarity}`}>{c.rarityLabel}</span>
                           <XflipCard src={c.src} tiltMax={16} />
                         </>
@@ -483,6 +485,7 @@ export function App(): JSX.Element {
                 className={`sum-card rarity-${c.rarity}`}
                 onClick={() => setDetail(c)}
               >
+                {!preOwned.has(c.gid) && <span className="new-badge">NEW</span>}
                 <XflipCard src={c.src} tiltMax={12} />
                 <span className={`badge badge-${c.rarity}`}>{c.rarityLabel}</span>
                 <span className="sum-name">{c.name}</span>
@@ -626,7 +629,11 @@ export function App(): JSX.Element {
               <span className={`badge badge-${detail.rarity}`}>{detail.rarityLabel}</span>
               <strong>{detail.name}</strong>
               <span className="hint">
-                drop rate {(detail.rate * 100).toFixed(detail.rate < 0.01 ? 2 : 1)}%
+                drop rate{' '}
+                {(RARITY_RATES[detail.rarity] * 100).toFixed(
+                  RARITY_RATES[detail.rarity] < 0.01 ? 2 : 1,
+                )}
+                %
               </span>
               <span className="hint">tap & drag the card to tilt</span>
             </div>

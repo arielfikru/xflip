@@ -459,6 +459,28 @@ h2 {
   color: #1e1b4b;
 }
 
+.new-badge {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  z-index: 3;
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.1em;
+  padding: 3px 8px;
+  border-radius: 999px;
+  color: #0b1220;
+  background: linear-gradient(90deg, #4ade80, #22d3ee);
+  box-shadow: 0 0 12px rgba(34, 211, 238, 0.6);
+  animation: new-pop 0.3s ease both;
+}
+
+@keyframes new-pop {
+  0% { transform: scale(0); }
+  70% { transform: scale(1.18); }
+  100% { transform: scale(1); }
+}
+
 /* ---------- summary / collection ---------- */
 
 .summary,

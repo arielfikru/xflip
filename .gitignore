@@ -48,6 +48,12 @@ tests/fixtures/generated/
 .vite/
 .playwright-mcp/
 
+# Server SQLite data
+apps/server/data/
+*.db
+*.db-shm
+*.db-wal
+
 # Local-only sample inputs (user-provided, not part of the repo)
 /sample.jpg
 holo-fixed*.png

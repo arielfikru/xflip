@@ -18,5 +18,11 @@ export default defineConfig({
   server: {
     port: 5173,
     strictPort: false,
+    proxy: {
+      '/api': {
+        target: process.env.XFLIP_API_URL ?? 'http://localhost:8787',
+        changeOrigin: true,
+      },
+    },
   },
 });
