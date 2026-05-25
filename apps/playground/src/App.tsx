@@ -3,8 +3,19 @@ import { useEffect, useMemo, useState } from 'react';
 
 type Rarity = 'c' | 'r' | 'sr' | 'ssr' | 'ur';
 
+interface PackDef {
+  id: string;
+  name: string;
+  kicker: string;
+  accent: string;
+  back: string;
+  manifest: string;
+}
+
 interface CardDef {
   id: string;
+  gid: string; // globally unique: `${pack}:${id}`
+  pack: string;
   name: string;
   rarity: Rarity;
   rarityLabel: string;
@@ -17,7 +28,6 @@ type Phase = 'home' | 'opening' | 'reveal' | 'summary' | 'collection' | 'index';
 const RARITY_ORDER: Record<Rarity, number> = { c: 0, r: 1, sr: 2, ssr: 3, ur: 4 };
 const PACK_SIZE = 6;
 const STORAGE_KEY = 'xflip-gacha-collection';
-const BACK_SRC = 'gacha/back.jpg';
 
 function loadCollection(): Record<string, number> {
   try {
@@ -74,12 +84,17 @@ function drawPack(pool: CardDef[]): CardDef[] {
     const srPlus = rates.filter((x) => RARITY_ORDER[x.rarity] >= 1);
     if (srPlus.length) cards[PACK_SIZE - 1] = drawOne(pickRarity(srPlus));
   }
+
+  // Reveal worst→best so the best card sits at the back and is revealed last.
+  cards.sort((a, b) => RARITY_ORDER[a.rarity] - RARITY_ORDER[b.rarity]);
   return cards;
 }
 
 export function App(): JSX.Element {
+  const [packs, setPacks] = useState<PackDef[]>([]);
   const [pool, setPool] = useState<CardDef[]>([]);
   const [phase, setPhase] = useState<Phase>('home');
+  const [activePack, setActivePack] = useState<PackDef | null>(null);
   const [pack, setPack] = useState<{ card: CardDef; uid: string }[]>([]);
   const [index, setIndex] = useState(0); // current card in the deck
   const [flipped, setFlipped] = useState(false); // current card revealed?
@@ -90,21 +105,35 @@ export function App(): JSX.Element {
 
   useEffect(() => {
     setCollection(loadCollection());
-    fetch('gacha/manifest.json')
+    fetch('gacha/packs.json')
       .then((r) => r.json())
-      .then((data: CardDef[]) => setPool(data))
-      .catch(() => setPool([]));
+      .then(async (defs: PackDef[]) => {
+        setPacks(defs);
+        const all = await Promise.all(
+          defs.map(async (p) => {
+            const cards = (await fetch(p.manifest).then((r) => r.json())) as CardDef[];
+            return cards.map((c) => ({ ...c, pack: p.id, gid: `${p.id}:${c.id}` }));
+          }),
+        );
+        setPool(all.flat());
+      })
+      .catch(() => {
+        setPacks([]);
+        setPool([]);
+      });
   }, []);
 
-  const byId = useMemo(() => {
+  const byGid = useMemo(() => {
     const m = new Map<string, CardDef>();
-    for (const c of pool) m.set(c.id, c);
+    for (const c of pool) m.set(c.gid, c);
     return m;
   }, [pool]);
 
-  function openPack(): void {
-    if (!pool.length) return;
-    setPack(drawPack(pool).map((card) => ({ card, uid: crypto.randomUUID() })));
+  function openPack(p: PackDef): void {
+    const subset = pool.filter((c) => c.pack === p.id);
+    if (!subset.length) return;
+    setActivePack(p);
+    setPack(drawPack(subset).map((card) => ({ card, uid: crypto.randomUUID() })));
     setIndex(0);
     setFlipped(false);
     setExiting(false);
@@ -131,7 +160,7 @@ export function App(): JSX.Element {
   function saveToCollection(): void {
     setCollection((prev) => {
       const next = { ...prev };
-      for (const { card } of pack) next[card.id] = (next[card.id] ?? 0) + 1;
+      for (const { card } of pack) next[card.gid] = (next[card.gid] ?? 0) + 1;
       saveCollection(next);
       return next;
     });
@@ -144,6 +173,8 @@ export function App(): JSX.Element {
       if (RARITY_ORDER[card.rarity] > RARITY_ORDER[best]) best = card.rarity;
     return best;
   }, [pack]);
+
+  const backSrc = activePack?.back ?? 'gacha/waifu/back.jpg';
 
   return (
     <main className="gacha">
@@ -178,16 +209,34 @@ export function App(): JSX.Element {
 
       {phase === 'home' && (
         <section className="home">
-          <button type="button" className="pack" onClick={openPack}>
-            <div className="pack-shine" />
-            <div className="pack-label">
-              <span className="pack-kicker">PREMIUM PACK</span>
-              <strong>{PACK_SIZE} CARDS</strong>
-              <span className="pack-sub">tap to open</span>
+          {packs.length ? (
+            <div className="pack-shelf">
+              {packs.map((p) => {
+                const subset = pool.filter((c) => c.pack === p.id);
+                return (
+                  <button
+                    key={p.id}
+                    type="button"
+                    className="pack"
+                    style={{ ['--accent' as string]: p.accent }}
+                    onClick={() => openPack(p)}
+                  >
+                    <div className="pack-shine" />
+                    <div className="pack-label">
+                      <span className="pack-kicker">{p.kicker}</span>
+                      <strong>{p.name}</strong>
+                      <span className="pack-sub">{subset.length} cards · tap to open</span>
+                    </div>
+                  </button>
+                );
+              })}
             </div>
-          </button>
+          ) : (
+            <span className="hint warn">loading packs…</span>
+          )}
           <p className="hint">
-            {PACK_SIZE} cards per pack · guaranteed SR or better · holo escalates with rarity
+            {PACK_SIZE} cards per pack · guaranteed SR or better · holo escalates with rarity · best
+            card last
           </p>
           <div className="odds">
             {pool.length ? (
@@ -218,8 +267,8 @@ export function App(): JSX.Element {
               <div className="pack-face">
                 <div className="pack-shine" />
                 <div className="pack-label">
-                  <span className="pack-kicker">PREMIUM PACK</span>
-                  <strong>{PACK_SIZE} CARDS</strong>
+                  <span className="pack-kicker">{activePack?.kicker ?? 'PACK'}</span>
+                  <strong>{activePack?.name ?? ''}</strong>
                 </div>
               </div>
             </div>
@@ -227,8 +276,8 @@ export function App(): JSX.Element {
               <div className="pack-face">
                 <div className="pack-shine" />
                 <div className="pack-label">
-                  <span className="pack-kicker">PREMIUM PACK</span>
-                  <strong>{PACK_SIZE} CARDS</strong>
+                  <span className="pack-kicker">{activePack?.kicker ?? 'PACK'}</span>
+                  <strong>{activePack?.name ?? ''}</strong>
                 </div>
               </div>
             </div>
@@ -276,7 +325,7 @@ export function App(): JSX.Element {
                 >
                   <div className="deck-inner">
                     <div className="deck-back">
-                      <img src={BACK_SRC} alt="" />
+                      <img src={backSrc} alt="" />
                     </div>
                     <div className="deck-front">
                       {isActive && flipped && (
@@ -327,8 +376,13 @@ export function App(): JSX.Element {
             <button type="button" className="primary" disabled={saved} onClick={saveToCollection}>
               {saved ? 'Saved ✓' : 'Save to collection'}
             </button>
-            <button type="button" className="ghost" onClick={openPack}>
-              Open another pack
+            {activePack && (
+              <button type="button" className="ghost" onClick={() => openPack(activePack)}>
+                Open another {activePack.name}
+              </button>
+            )}
+            <button type="button" className="ghost" onClick={() => setPhase('home')}>
+              Back to packs
             </button>
           </div>
         </section>
@@ -340,12 +394,12 @@ export function App(): JSX.Element {
           {(() => {
             const owned = Object.entries(collection)
               .filter(([, n]) => n > 0)
-              .map(([id, n]) => ({ card: byId.get(id), count: n }))
+              .map(([gid, n]) => ({ card: byGid.get(gid), count: n }))
               .filter((x): x is { card: CardDef; count: number } => Boolean(x.card))
               .sort(
                 (a, b) =>
                   RARITY_ORDER[b.card.rarity] - RARITY_ORDER[a.card.rarity] ||
-                  a.card.id.localeCompare(b.card.id),
+                  a.card.gid.localeCompare(b.card.gid),
               );
             const total = owned.reduce((a, x) => a + x.count, 0);
             if (!owned.length) return <p className="hint">No cards yet. Open a pack!</p>;
@@ -358,7 +412,7 @@ export function App(): JSX.Element {
                   {owned.map(({ card, count }) => (
                     <button
                       type="button"
-                      key={card.id}
+                      key={card.gid}
                       className={`sum-card rarity-${card.rarity}`}
                       onClick={() => setDetail(card)}
                     >
@@ -380,44 +434,61 @@ export function App(): JSX.Element {
         <section className="collection">
           <h2>Card Index</h2>
           <p className="hint">
-            {pool.filter((c) => (collection[c.id] ?? 0) > 0).length}/{pool.length} collected
+            {pool.filter((c) => (collection[c.gid] ?? 0) > 0).length}/{pool.length} collected
           </p>
-          {(['ur', 'ssr', 'sr', 'r', 'c'] as Rarity[]).map((rarity) => {
-            const cards = pool.filter((c) => c.rarity === rarity);
-            if (!cards.length) return null;
-            const ownedN = cards.filter((c) => (collection[c.id] ?? 0) > 0).length;
+          {packs.map((p) => {
+            const packCards = pool.filter((c) => c.pack === p.id);
+            if (!packCards.length) return null;
+            const packOwned = packCards.filter((c) => (collection[c.gid] ?? 0) > 0).length;
             return (
-              <div key={rarity} className="index-group">
-                <div className="index-head">
-                  <span className={`badge badge-${rarity}`}>{cards[0]?.rarityLabel ?? rarity}</span>
+              <div key={p.id} className="index-pack">
+                <h3 className="index-pack-head">
+                  <span style={{ color: p.accent }}>{p.name}</span>
                   <span className="hint">
-                    {ownedN}/{cards.length}
+                    {packOwned}/{packCards.length}
                   </span>
-                </div>
-                <div className="summary-grid">
-                  {cards.map((c) => {
-                    const owned = (collection[c.id] ?? 0) > 0;
-                    return owned ? (
-                      <button
-                        type="button"
-                        key={c.id}
-                        className={`sum-card rarity-${c.rarity}`}
-                        onClick={() => setDetail(c)}
-                      >
-                        <XflipCard src={c.src} tiltMax={12} />
-                        <span className={`badge badge-${c.rarity}`}>{c.rarityLabel}</span>
-                        <span className="sum-name">{c.name}</span>
-                      </button>
-                    ) : (
-                      <div key={c.id} className="sum-card locked">
-                        <div className="locked-art">
-                          <span>?</span>
-                        </div>
-                        <span className="sum-name muted">Locked</span>
+                </h3>
+                {(['ur', 'ssr', 'sr', 'r', 'c'] as Rarity[]).map((rarity) => {
+                  const cards = packCards.filter((c) => c.rarity === rarity);
+                  if (!cards.length) return null;
+                  const ownedN = cards.filter((c) => (collection[c.gid] ?? 0) > 0).length;
+                  return (
+                    <div key={rarity} className="index-group">
+                      <div className="index-head">
+                        <span className={`badge badge-${rarity}`}>
+                          {cards[0]?.rarityLabel ?? rarity}
+                        </span>
+                        <span className="hint">
+                          {ownedN}/{cards.length}
+                        </span>
                       </div>
-                    );
-                  })}
-                </div>
+                      <div className="summary-grid">
+                        {cards.map((c) => {
+                          const owned = (collection[c.gid] ?? 0) > 0;
+                          return owned ? (
+                            <button
+                              type="button"
+                              key={c.gid}
+                              className={`sum-card rarity-${c.rarity}`}
+                              onClick={() => setDetail(c)}
+                            >
+                              <XflipCard src={c.src} tiltMax={12} />
+                              <span className={`badge badge-${c.rarity}`}>{c.rarityLabel}</span>
+                              <span className="sum-name">{c.name}</span>
+                            </button>
+                          ) : (
+                            <div key={c.gid} className="sum-card locked">
+                              <div className="locked-art">
+                                <span>?</span>
+                              </div>
+                              <span className="sum-name muted">Locked</span>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  );
+                })}
               </div>
             );
           })}

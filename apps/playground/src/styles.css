@@ -145,6 +145,13 @@ h2 {
   padding-top: 48px;
 }
 
+.pack-shelf {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 28px;
+  justify-content: center;
+}
+
 .pack {
   appearance: none;
   font: inherit;
@@ -154,7 +161,7 @@ h2 {
   height: 360px;
   border-radius: 18px;
   background: linear-gradient(150deg, #312e81 0%, #1e1b4b 45%, #0f172a 100%);
-  border: 1px solid rgba(148, 163, 184, 0.25);
+  border: 1px solid var(--accent, rgba(148, 163, 184, 0.25));
   box-shadow: 0 30px 60px rgba(0, 0, 0, 0.55), inset 0 0 60px rgba(99, 102, 241, 0.25);
   cursor: pointer;
   overflow: hidden;
@@ -198,9 +205,10 @@ h2 {
 }
 
 .pack-label strong {
-  font-size: 30px;
+  font-size: 26px;
   font-weight: 800;
-  letter-spacing: 0.05em;
+  letter-spacing: 0.03em;
+  padding: 0 12px;
 }
 
 .pack-sub {
@@ -489,6 +497,24 @@ h2 {
 }
 
 /* ---------- card index ---------- */
+
+.index-pack {
+  margin: 0 auto 40px;
+  max-width: 900px;
+}
+
+.index-pack-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  font-size: 22px;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  border-bottom: 1px solid rgba(148, 163, 184, 0.2);
+  padding-bottom: 8px;
+  margin: 0 0 18px;
+}
 
 .index-group {
   max-width: 900px;

@@ -1,16 +1,23 @@
 // REMOTE fetch-only stage (runs on a host with danbooru access, e.g. a VPS).
+// Generalized over a base tag so multiple themed packs share one fetcher.
 // No npm deps — uses Node 18+ global fetch. Downloads thumbnails + writes an
-// index.json describing each card. The local `encode-pack120.mjs` stage then
+// index.json describing each card. The local `encode-pack.mjs` stage then
 // resizes and encodes them into .xflip offline.
 //
-//   node fetch-danbooru.mjs <outDir>
+//   node fetch-pack.mjs <outDir> <baseTag> [--solo]
+//
+// Anonymous danbooru allows only 2 search tags, so we query
+// `score:LO..HI <baseTag>` and filter rating=general client-side. Pass --solo
+// to additionally require the `solo` tag (single-character packs).
 //
 // Rarity by score: C 10-19 · R 20-29 · SR 30-39 · SSR 40-69 · UR 70+
 
 import { existsSync, mkdirSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 
-const outDir = process.argv[2] ?? './pack120-src';
+const outDir = process.argv[2] ?? './pack-src';
+const baseTag = process.argv[3] ?? '1girl';
+const requireSolo = process.argv.includes('--solo');
 mkdirSync(outDir, { recursive: true });
 
 const USER_AGENT = 'xflip-gacha-demo/1.0 (card-game thumbnail fetch)';
@@ -65,14 +72,14 @@ async function download(url) {
 async function collectTier(tier) {
   const picked = [];
   const seen = new Set();
-  for (let page = 1; page <= 30 && picked.length < tier.count; page++) {
-    const url = `${API}?tags=${encodeURIComponent(`score:${tier.range} 1girl`)}&limit=200&page=${page}`;
+  for (let page = 1; page <= 50 && picked.length < tier.count; page++) {
+    const url = `${API}?tags=${encodeURIComponent(`score:${tier.range} ${baseTag}`)}&limit=200&page=${page}`;
     const posts = await fetchJson(url);
     if (!Array.isArray(posts) || posts.length === 0) break;
     for (const post of posts) {
       if (picked.length >= tier.count) break;
       if (post.rating !== 'g') continue;
-      if (!/\bsolo\b/.test(String(post.tag_string ?? ''))) continue;
+      if (requireSolo && !/\bsolo\b/.test(String(post.tag_string ?? ''))) continue;
       const thumb = thumbUrl(post);
       if (!thumb || seen.has(post.id)) continue;
       seen.add(post.id);
@@ -108,7 +115,7 @@ for (const tier of TIERS) {
 }
 
 writeFileSync(join(outDir, 'index.json'), JSON.stringify(index, null, 2));
-console.log(`fetched ${index.length} thumbnails → ${outDir}`);
+console.log(`fetched ${index.length} thumbnails (tag="${baseTag}", solo=${requireSolo}) → ${outDir}`);
 for (const tier of TIERS) {
   console.log(`  ${tier.tier}: ${index.filter((x) => x.tier === tier.tier).length}`);
 }

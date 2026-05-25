@@ -1,0 +1,18 @@
+[
+  {
+    "id": "waifu",
+    "name": "Waifu Premium",
+    "kicker": "ANIME PACK",
+    "accent": "#f472b6",
+    "back": "gacha/waifu/back.jpg",
+    "manifest": "gacha/waifu/manifest.json"
+  },
+  {
+    "id": "hsr",
+    "name": "Star Rail",
+    "kicker": "HONKAI PACK",
+    "accent": "#7dd3fc",
+    "back": "gacha/hsr/back.jpg",
+    "manifest": "gacha/hsr/manifest.json"
+  }
+]

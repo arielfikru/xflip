@@ -1,9 +1,10 @@
 // LOCAL encode stage (offline). Reads thumbnails + index.json fetched by the
-// remote fetch-danbooru.mjs stage (in gacha/large-src/), resizes them, embeds
-// a rarity-escalating holo config in META, and writes the 120-card .xflip set
-// + manifest.json to public/gacha/.
+// remote fetch-pack.mjs stage (in gacha/<packId>-src/), resizes them, embeds a
+// rarity-escalating holo config in META, and writes that pack's .xflip set +
+// manifest.json to public/gacha/<packId>/.
 //
-//   pnpm --filter @xflip/playground pack120:encode
+//   pnpm --filter @xflip/playground encode-pack <packId>
+//   node scripts/encode-pack.mjs waifu
 
 import { existsSync, mkdirSync, readFileSync, readdirSync, rmSync, writeFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
@@ -11,11 +12,17 @@ import { fileURLToPath } from 'node:url';
 import sharp from 'sharp';
 import { encode } from '../../../packages/xflip-core/dist/index.js';
 
+const packId = process.argv[2];
+if (!packId) {
+  console.error('usage: node scripts/encode-pack.mjs <packId>');
+  process.exit(1);
+}
+
 const here = dirname(fileURLToPath(import.meta.url));
 const repoRoot = join(here, '..', '..', '..');
 const gachaDir = join(repoRoot, 'gacha');
-const srcDir = join(gachaDir, 'large-src');
-const outDir = join(here, '..', 'public', 'gacha');
+const srcDir = join(gachaDir, `${packId}-src`);
+const outDir = join(here, '..', 'public', 'gacha', packId);
 mkdirSync(outDir, { recursive: true });
 
 const TIERS = {
@@ -75,7 +82,9 @@ if (!existsSync(indexPath)) {
 }
 const index = JSON.parse(readFileSync(indexPath, 'utf8'));
 
-const backPath = join(gachaDir, 'back.jpg');
+const backPath = existsSync(join(srcDir, 'back.jpg'))
+  ? join(srcDir, 'back.jpg')
+  : join(gachaDir, 'back.jpg');
 const back = await sharp(readFileSync(backPath))
   .resize({ width: 720, withoutEnlargement: true })
   .jpeg({ quality: 82, mozjpeg: true })
@@ -86,7 +95,6 @@ for (const f of readdirSync(outDir)) {
   if (f.endsWith('.xflip')) rmSync(join(outDir, f));
 }
 
-// Per-tier running counter so holo rotation matches fetch order.
 const tierSeq = {};
 const manifest = [];
 
@@ -113,13 +121,13 @@ for (const entry of index) {
     rate: t.rate,
     score: entry.score,
     source: `https://danbooru.donmai.us/posts/${entry.danbooruId}`,
-    src: `gacha/${entry.id}.xflip`,
+    src: `gacha/${packId}/${entry.id}.xflip`,
     holo,
   });
 }
 
 writeFileSync(join(outDir, 'manifest.json'), JSON.stringify(manifest, null, 2));
-console.log(`encoded ${manifest.length} cards → public/gacha/`);
+console.log(`encoded ${manifest.length} cards → public/gacha/${packId}/`);
 for (const tier of Object.keys(TIERS)) {
   console.log(`  ${tier}: ${manifest.filter((m) => m.rarity === tier).length}`);
 }

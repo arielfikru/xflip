@@ -1,0 +1,1769 @@
+[
+  {
+    "id": "c-01",
+    "name": "Common #01",
+    "rarity": "c",
+    "rarityLabel": "Common",
+    "rate": 0.6,
+    "score": 12,
+    "source": "https://danbooru.donmai.us/posts/11446869",
+    "src": "gacha/hsr/c-01.xflip",
+    "holo": []
+  },
+  {
+    "id": "c-02",
+    "name": "Common #02",
+    "rarity": "c",
+    "rarityLabel": "Common",
+    "rate": 0.6,
+    "score": 12,
+    "source": "https://danbooru.donmai.us/posts/11446638",
+    "src": "gacha/hsr/c-02.xflip",
+    "holo": []
+  },
+  {
+    "id": "c-03",
+    "name": "Common #03",
+    "rarity": "c",
+    "rarityLabel": "Common",
+    "rate": 0.6,
+    "score": 11,
+    "source": "https://danbooru.donmai.us/posts/11446599",
+    "src": "gacha/hsr/c-03.xflip",
+    "holo": []
+  },
+  {
+    "id": "c-04",
+    "name": "Common #04",
+    "rarity": "c",
+    "rarityLabel": "Common",
+    "rate": 0.6,
+    "score": 17,
+    "source": "https://danbooru.donmai.us/posts/11446221",
+    "src": "gacha/hsr/c-04.xflip",
+    "holo": []
+  },
+  {
+    "id": "c-05",
+    "name": "Common #05",
+    "rarity": "c",
+    "rarityLabel": "Common",
+    "rate": 0.6,
+    "score": 15,
+    "source": "https://danbooru.donmai.us/posts/11445318",
+    "src": "gacha/hsr/c-05.xflip",
+    "holo": []
+  },
+  {
+    "id": "c-06",
+    "name": "Common #06",
+    "rarity": "c",
+    "rarityLabel": "Common",
+    "rate": 0.6,
+    "score": 12,
+    "source": "https://danbooru.donmai.us/posts/11445201",
+    "src": "gacha/hsr/c-06.xflip",
+    "holo": []
+  },
+  {
+    "id": "c-07",
+    "name": "Common #07",
+    "rarity": "c",
+    "rarityLabel": "Common",
+    "rate": 0.6,
+    "score": 11,
+    "source": "https://danbooru.donmai.us/posts/11444986",
+    "src": "gacha/hsr/c-07.xflip",
+    "holo": []
+  },
+  {
+    "id": "c-08",
+    "name": "Common #08",
+    "rarity": "c",
+    "rarityLabel": "Common",
+    "rate": 0.6,
+    "score": 17,
+    "source": "https://danbooru.donmai.us/posts/11444967",
+    "src": "gacha/hsr/c-08.xflip",
+    "holo": []
+  },
+  {
+    "id": "c-09",
+    "name": "Common #09",
+    "rarity": "c",
+    "rarityLabel": "Common",
+    "rate": 0.6,
+    "score": 17,
+    "source": "https://danbooru.donmai.us/posts/11444796",
+    "src": "gacha/hsr/c-09.xflip",
+    "holo": []
+  },
+  {
+    "id": "c-10",
+    "name": "Common #10",
+    "rarity": "c",
+    "rarityLabel": "Common",
+    "rate": 0.6,
+    "score": 13,
+    "source": "https://danbooru.donmai.us/posts/11443604",
+    "src": "gacha/hsr/c-10.xflip",
+    "holo": []
+  },
+  {
+    "id": "c-11",
+    "name": "Common #11",
+    "rarity": "c",
+    "rarityLabel": "Common",
+    "rate": 0.6,
+    "score": 16,
+    "source": "https://danbooru.donmai.us/posts/11443457",
+    "src": "gacha/hsr/c-11.xflip",
+    "holo": []
+  },
+  {
+    "id": "c-12",
+    "name": "Common #12",
+    "rarity": "c",
+    "rarityLabel": "Common",
+    "rate": 0.6,
+    "score": 15,
+    "source": "https://danbooru.donmai.us/posts/11443397",
+    "src": "gacha/hsr/c-12.xflip",
+    "holo": []
+  },
+  {
+    "id": "c-13",
+    "name": "Common #13",
+    "rarity": "c",
+    "rarityLabel": "Common",
+    "rate": 0.6,
+    "score": 17,
+    "source": "https://danbooru.donmai.us/posts/11443339",
+    "src": "gacha/hsr/c-13.xflip",
+    "holo": []
+  },
+  {
+    "id": "c-14",
+    "name": "Common #14",
+    "rarity": "c",
+    "rarityLabel": "Common",
+    "rate": 0.6,
+    "score": 15,
+    "source": "https://danbooru.donmai.us/posts/11442381",
+    "src": "gacha/hsr/c-14.xflip",
+    "holo": []
+  },
+  {
+    "id": "c-15",
+    "name": "Common #15",
+    "rarity": "c",
+    "rarityLabel": "Common",
+    "rate": 0.6,
+    "score": 12,
+    "source": "https://danbooru.donmai.us/posts/11441979",
+    "src": "gacha/hsr/c-15.xflip",
+    "holo": []
+  },
+  {
+    "id": "c-16",
+    "name": "Common #16",
+    "rarity": "c",
+    "rarityLabel": "Common",
+    "rate": 0.6,
+    "score": 16,
+    "source": "https://danbooru.donmai.us/posts/11441909",
+    "src": "gacha/hsr/c-16.xflip",
+    "holo": []
+  },
+  {
+    "id": "c-17",
+    "name": "Common #17",
+    "rarity": "c",
+    "rarityLabel": "Common",
+    "rate": 0.6,
+    "score": 14,
+    "source": "https://danbooru.donmai.us/posts/11441532",
+    "src": "gacha/hsr/c-17.xflip",
+    "holo": []
+  },
+  {
+    "id": "c-18",
+    "name": "Common #18",
+    "rarity": "c",
+    "rarityLabel": "Common",
+    "rate": 0.6,
+    "score": 12,
+    "source": "https://danbooru.donmai.us/posts/11440927",
+    "src": "gacha/hsr/c-18.xflip",
+    "holo": []
+  },
+  {
+    "id": "c-19",
+    "name": "Common #19",
+    "rarity": "c",
+    "rarityLabel": "Common",
+    "rate": 0.6,
+    "score": 11,
+    "source": "https://danbooru.donmai.us/posts/11440617",
+    "src": "gacha/hsr/c-19.xflip",
+    "holo": []
+  },
+  {
+    "id": "c-20",
+    "name": "Common #20",
+    "rarity": "c",
+    "rarityLabel": "Common",
+    "rate": 0.6,
+    "score": 17,
+    "source": "https://danbooru.donmai.us/posts/11439991",
+    "src": "gacha/hsr/c-20.xflip",
+    "holo": []
+  },
+  {
+    "id": "c-21",
+    "name": "Common #21",
+    "rarity": "c",
+    "rarityLabel": "Common",
+    "rate": 0.6,
+    "score": 12,
+    "source": "https://danbooru.donmai.us/posts/11439562",
+    "src": "gacha/hsr/c-21.xflip",
+    "holo": []
+  },
+  {
+    "id": "c-22",
+    "name": "Common #22",
+    "rarity": "c",
+    "rarityLabel": "Common",
+    "rate": 0.6,
+    "score": 17,
+    "source": "https://danbooru.donmai.us/posts/11439507",
+    "src": "gacha/hsr/c-22.xflip",
+    "holo": []
+  },
+  {
+    "id": "c-23",
+    "name": "Common #23",
+    "rarity": "c",
+    "rarityLabel": "Common",
+    "rate": 0.6,
+    "score": 14,
+    "source": "https://danbooru.donmai.us/posts/11439037",
+    "src": "gacha/hsr/c-23.xflip",
+    "holo": []
+  },
+  {
+    "id": "c-24",
+    "name": "Common #24",
+    "rarity": "c",
+    "rarityLabel": "Common",
+    "rate": 0.6,
+    "score": 14,
+    "source": "https://danbooru.donmai.us/posts/11438812",
+    "src": "gacha/hsr/c-24.xflip",
+    "holo": []
+  },
+  {
+    "id": "c-25",
+    "name": "Common #25",
+    "rarity": "c",
+    "rarityLabel": "Common",
+    "rate": 0.6,
+    "score": 10,
+    "source": "https://danbooru.donmai.us/posts/11438476",
+    "src": "gacha/hsr/c-25.xflip",
+    "holo": []
+  },
+  {
+    "id": "c-26",
+    "name": "Common #26",
+    "rarity": "c",
+    "rarityLabel": "Common",
+    "rate": 0.6,
+    "score": 12,
+    "source": "https://danbooru.donmai.us/posts/11438443",
+    "src": "gacha/hsr/c-26.xflip",
+    "holo": []
+  },
+  {
+    "id": "c-27",
+    "name": "Common #27",
+    "rarity": "c",
+    "rarityLabel": "Common",
+    "rate": 0.6,
+    "score": 16,
+    "source": "https://danbooru.donmai.us/posts/11438108",
+    "src": "gacha/hsr/c-27.xflip",
+    "holo": []
+  },
+  {
+    "id": "c-28",
+    "name": "Common #28",
+    "rarity": "c",
+    "rarityLabel": "Common",
+    "rate": 0.6,
+    "score": 13,
+    "source": "https://danbooru.donmai.us/posts/11438017",
+    "src": "gacha/hsr/c-28.xflip",
+    "holo": []
+  },
+  {
+    "id": "c-29",
+    "name": "Common #29",
+    "rarity": "c",
+    "rarityLabel": "Common",
+    "rate": 0.6,
+    "score": 14,
+    "source": "https://danbooru.donmai.us/posts/11437514",
+    "src": "gacha/hsr/c-29.xflip",
+    "holo": []
+  },
+  {
+    "id": "c-30",
+    "name": "Common #30",
+    "rarity": "c",
+    "rarityLabel": "Common",
+    "rate": 0.6,
+    "score": 15,
+    "source": "https://danbooru.donmai.us/posts/11437297",
+    "src": "gacha/hsr/c-30.xflip",
+    "holo": []
+  },
+  {
+    "id": "c-31",
+    "name": "Common #31",
+    "rarity": "c",
+    "rarityLabel": "Common",
+    "rate": 0.6,
+    "score": 11,
+    "source": "https://danbooru.donmai.us/posts/11436911",
+    "src": "gacha/hsr/c-31.xflip",
+    "holo": []
+  },
+  {
+    "id": "c-32",
+    "name": "Common #32",
+    "rarity": "c",
+    "rarityLabel": "Common",
+    "rate": 0.6,
+    "score": 13,
+    "source": "https://danbooru.donmai.us/posts/11436746",
+    "src": "gacha/hsr/c-32.xflip",
+    "holo": []
+  },
+  {
+    "id": "c-33",
+    "name": "Common #33",
+    "rarity": "c",
+    "rarityLabel": "Common",
+    "rate": 0.6,
+    "score": 17,
+    "source": "https://danbooru.donmai.us/posts/11436630",
+    "src": "gacha/hsr/c-33.xflip",
+    "holo": []
+  },
+  {
+    "id": "c-34",
+    "name": "Common #34",
+    "rarity": "c",
+    "rarityLabel": "Common",
+    "rate": 0.6,
+    "score": 10,
+    "source": "https://danbooru.donmai.us/posts/11436246",
+    "src": "gacha/hsr/c-34.xflip",
+    "holo": []
+  },
+  {
+    "id": "c-35",
+    "name": "Common #35",
+    "rarity": "c",
+    "rarityLabel": "Common",
+    "rate": 0.6,
+    "score": 12,
+    "source": "https://danbooru.donmai.us/posts/11436092",
+    "src": "gacha/hsr/c-35.xflip",
+    "holo": []
+  },
+  {
+    "id": "c-36",
+    "name": "Common #36",
+    "rarity": "c",
+    "rarityLabel": "Common",
+    "rate": 0.6,
+    "score": 11,
+    "source": "https://danbooru.donmai.us/posts/11434553",
+    "src": "gacha/hsr/c-36.xflip",
+    "holo": []
+  },
+  {
+    "id": "c-37",
+    "name": "Common #37",
+    "rarity": "c",
+    "rarityLabel": "Common",
+    "rate": 0.6,
+    "score": 11,
+    "source": "https://danbooru.donmai.us/posts/11433743",
+    "src": "gacha/hsr/c-37.xflip",
+    "holo": []
+  },
+  {
+    "id": "c-38",
+    "name": "Common #38",
+    "rarity": "c",
+    "rarityLabel": "Common",
+    "rate": 0.6,
+    "score": 12,
+    "source": "https://danbooru.donmai.us/posts/11433004",
+    "src": "gacha/hsr/c-38.xflip",
+    "holo": []
+  },
+  {
+    "id": "c-39",
+    "name": "Common #39",
+    "rarity": "c",
+    "rarityLabel": "Common",
+    "rate": 0.6,
+    "score": 13,
+    "source": "https://danbooru.donmai.us/posts/11432982",
+    "src": "gacha/hsr/c-39.xflip",
+    "holo": []
+  },
+  {
+    "id": "c-40",
+    "name": "Common #40",
+    "rarity": "c",
+    "rarityLabel": "Common",
+    "rate": 0.6,
+    "score": 11,
+    "source": "https://danbooru.donmai.us/posts/11432913",
+    "src": "gacha/hsr/c-40.xflip",
+    "holo": []
+  },
+  {
+    "id": "c-41",
+    "name": "Common #41",
+    "rarity": "c",
+    "rarityLabel": "Common",
+    "rate": 0.6,
+    "score": 16,
+    "source": "https://danbooru.donmai.us/posts/11432731",
+    "src": "gacha/hsr/c-41.xflip",
+    "holo": []
+  },
+  {
+    "id": "c-42",
+    "name": "Common #42",
+    "rarity": "c",
+    "rarityLabel": "Common",
+    "rate": 0.6,
+    "score": 14,
+    "source": "https://danbooru.donmai.us/posts/11432191",
+    "src": "gacha/hsr/c-42.xflip",
+    "holo": []
+  },
+  {
+    "id": "c-43",
+    "name": "Common #43",
+    "rarity": "c",
+    "rarityLabel": "Common",
+    "rate": 0.6,
+    "score": 11,
+    "source": "https://danbooru.donmai.us/posts/11432158",
+    "src": "gacha/hsr/c-43.xflip",
+    "holo": []
+  },
+  {
+    "id": "c-44",
+    "name": "Common #44",
+    "rarity": "c",
+    "rarityLabel": "Common",
+    "rate": 0.6,
+    "score": 10,
+    "source": "https://danbooru.donmai.us/posts/11431541",
+    "src": "gacha/hsr/c-44.xflip",
+    "holo": []
+  },
+  {
+    "id": "c-45",
+    "name": "Common #45",
+    "rarity": "c",
+    "rarityLabel": "Common",
+    "rate": 0.6,
+    "score": 16,
+    "source": "https://danbooru.donmai.us/posts/11430969",
+    "src": "gacha/hsr/c-45.xflip",
+    "holo": []
+  },
+  {
+    "id": "r-01",
+    "name": "Rare #01",
+    "rarity": "r",
+    "rarityLabel": "Rare",
+    "rate": 0.25,
+    "score": 29,
+    "source": "https://danbooru.donmai.us/posts/11443462",
+    "src": "gacha/hsr/r-01.xflip",
+    "holo": [
+      {
+        "preset": "foil",
+        "intensity": 0.3
+      }
+    ]
+  },
+  {
+    "id": "r-02",
+    "name": "Rare #02",
+    "rarity": "r",
+    "rarityLabel": "Rare",
+    "rate": 0.25,
+    "score": 27,
+    "source": "https://danbooru.donmai.us/posts/11441822",
+    "src": "gacha/hsr/r-02.xflip",
+    "holo": [
+      {
+        "preset": "foil",
+        "intensity": 0.3
+      }
+    ]
+  },
+  {
+    "id": "r-03",
+    "name": "Rare #03",
+    "rarity": "r",
+    "rarityLabel": "Rare",
+    "rate": 0.25,
+    "score": 28,
+    "source": "https://danbooru.donmai.us/posts/11440470",
+    "src": "gacha/hsr/r-03.xflip",
+    "holo": [
+      {
+        "preset": "foil",
+        "intensity": 0.3
+      }
+    ]
+  },
+  {
+    "id": "r-04",
+    "name": "Rare #04",
+    "rarity": "r",
+    "rarityLabel": "Rare",
+    "rate": 0.25,
+    "score": 20,
+    "source": "https://danbooru.donmai.us/posts/11440256",
+    "src": "gacha/hsr/r-04.xflip",
+    "holo": [
+      {
+        "preset": "foil",
+        "intensity": 0.3
+      }
+    ]
+  },
+  {
+    "id": "r-05",
+    "name": "Rare #05",
+    "rarity": "r",
+    "rarityLabel": "Rare",
+    "rate": 0.25,
+    "score": 20,
+    "source": "https://danbooru.donmai.us/posts/11439206",
+    "src": "gacha/hsr/r-05.xflip",
+    "holo": [
+      {
+        "preset": "foil",
+        "intensity": 0.3
+      }
+    ]
+  },
+  {
+    "id": "r-06",
+    "name": "Rare #06",
+    "rarity": "r",
+    "rarityLabel": "Rare",
+    "rate": 0.25,
+    "score": 22,
+    "source": "https://danbooru.donmai.us/posts/11434223",
+    "src": "gacha/hsr/r-06.xflip",
+    "holo": [
+      {
+        "preset": "foil",
+        "intensity": 0.3
+      }
+    ]
+  },
+  {
+    "id": "r-07",
+    "name": "Rare #07",
+    "rarity": "r",
+    "rarityLabel": "Rare",
+    "rate": 0.25,
+    "score": 26,
+    "source": "https://danbooru.donmai.us/posts/11433855",
+    "src": "gacha/hsr/r-07.xflip",
+    "holo": [
+      {
+        "preset": "foil",
+        "intensity": 0.3
+      }
+    ]
+  },
+  {
+    "id": "r-08",
+    "name": "Rare #08",
+    "rarity": "r",
+    "rarityLabel": "Rare",
+    "rate": 0.25,
+    "score": 22,
+    "source": "https://danbooru.donmai.us/posts/11433464",
+    "src": "gacha/hsr/r-08.xflip",
+    "holo": [
+      {
+        "preset": "foil",
+        "intensity": 0.3
+      }
+    ]
+  },
+  {
+    "id": "r-09",
+    "name": "Rare #09",
+    "rarity": "r",
+    "rarityLabel": "Rare",
+    "rate": 0.25,
+    "score": 25,
+    "source": "https://danbooru.donmai.us/posts/11432165",
+    "src": "gacha/hsr/r-09.xflip",
+    "holo": [
+      {
+        "preset": "foil",
+        "intensity": 0.3
+      }
+    ]
+  },
+  {
+    "id": "r-10",
+    "name": "Rare #10",
+    "rarity": "r",
+    "rarityLabel": "Rare",
+    "rate": 0.25,
+    "score": 20,
+    "source": "https://danbooru.donmai.us/posts/11430903",
+    "src": "gacha/hsr/r-10.xflip",
+    "holo": [
+      {
+        "preset": "foil",
+        "intensity": 0.3
+      }
+    ]
+  },
+  {
+    "id": "r-11",
+    "name": "Rare #11",
+    "rarity": "r",
+    "rarityLabel": "Rare",
+    "rate": 0.25,
+    "score": 22,
+    "source": "https://danbooru.donmai.us/posts/11428369",
+    "src": "gacha/hsr/r-11.xflip",
+    "holo": [
+      {
+        "preset": "foil",
+        "intensity": 0.3
+      }
+    ]
+  },
+  {
+    "id": "r-12",
+    "name": "Rare #12",
+    "rarity": "r",
+    "rarityLabel": "Rare",
+    "rate": 0.25,
+    "score": 20,
+    "source": "https://danbooru.donmai.us/posts/11425260",
+    "src": "gacha/hsr/r-12.xflip",
+    "holo": [
+      {
+        "preset": "foil",
+        "intensity": 0.3
+      }
+    ]
+  },
+  {
+    "id": "r-13",
+    "name": "Rare #13",
+    "rarity": "r",
+    "rarityLabel": "Rare",
+    "rate": 0.25,
+    "score": 26,
+    "source": "https://danbooru.donmai.us/posts/11424149",
+    "src": "gacha/hsr/r-13.xflip",
+    "holo": [
+      {
+        "preset": "foil",
+        "intensity": 0.3
+      }
+    ]
+  },
+  {
+    "id": "r-14",
+    "name": "Rare #14",
+    "rarity": "r",
+    "rarityLabel": "Rare",
+    "rate": 0.25,
+    "score": 22,
+    "source": "https://danbooru.donmai.us/posts/11423000",
+    "src": "gacha/hsr/r-14.xflip",
+    "holo": [
+      {
+        "preset": "foil",
+        "intensity": 0.3
+      }
+    ]
+  },
+  {
+    "id": "r-15",
+    "name": "Rare #15",
+    "rarity": "r",
+    "rarityLabel": "Rare",
+    "rate": 0.25,
+    "score": 24,
+    "source": "https://danbooru.donmai.us/posts/11422839",
+    "src": "gacha/hsr/r-15.xflip",
+    "holo": [
+      {
+        "preset": "foil",
+        "intensity": 0.3
+      }
+    ]
+  },
+  {
+    "id": "r-16",
+    "name": "Rare #16",
+    "rarity": "r",
+    "rarityLabel": "Rare",
+    "rate": 0.25,
+    "score": 24,
+    "source": "https://danbooru.donmai.us/posts/11422190",
+    "src": "gacha/hsr/r-16.xflip",
+    "holo": [
+      {
+        "preset": "foil",
+        "intensity": 0.3
+      }
+    ]
+  },
+  {
+    "id": "r-17",
+    "name": "Rare #17",
+    "rarity": "r",
+    "rarityLabel": "Rare",
+    "rate": 0.25,
+    "score": 21,
+    "source": "https://danbooru.donmai.us/posts/11417835",
+    "src": "gacha/hsr/r-17.xflip",
+    "holo": [
+      {
+        "preset": "foil",
+        "intensity": 0.3
+      }
+    ]
+  },
+  {
+    "id": "r-18",
+    "name": "Rare #18",
+    "rarity": "r",
+    "rarityLabel": "Rare",
+    "rate": 0.25,
+    "score": 21,
+    "source": "https://danbooru.donmai.us/posts/11416651",
+    "src": "gacha/hsr/r-18.xflip",
+    "holo": [
+      {
+        "preset": "foil",
+        "intensity": 0.3
+      }
+    ]
+  },
+  {
+    "id": "r-19",
+    "name": "Rare #19",
+    "rarity": "r",
+    "rarityLabel": "Rare",
+    "rate": 0.25,
+    "score": 26,
+    "source": "https://danbooru.donmai.us/posts/11415216",
+    "src": "gacha/hsr/r-19.xflip",
+    "holo": [
+      {
+        "preset": "foil",
+        "intensity": 0.3
+      }
+    ]
+  },
+  {
+    "id": "r-20",
+    "name": "Rare #20",
+    "rarity": "r",
+    "rarityLabel": "Rare",
+    "rate": 0.25,
+    "score": 21,
+    "source": "https://danbooru.donmai.us/posts/11414119",
+    "src": "gacha/hsr/r-20.xflip",
+    "holo": [
+      {
+        "preset": "foil",
+        "intensity": 0.3
+      }
+    ]
+  },
+  {
+    "id": "r-21",
+    "name": "Rare #21",
+    "rarity": "r",
+    "rarityLabel": "Rare",
+    "rate": 0.25,
+    "score": 26,
+    "source": "https://danbooru.donmai.us/posts/11412010",
+    "src": "gacha/hsr/r-21.xflip",
+    "holo": [
+      {
+        "preset": "foil",
+        "intensity": 0.3
+      }
+    ]
+  },
+  {
+    "id": "r-22",
+    "name": "Rare #22",
+    "rarity": "r",
+    "rarityLabel": "Rare",
+    "rate": 0.25,
+    "score": 26,
+    "source": "https://danbooru.donmai.us/posts/11411815",
+    "src": "gacha/hsr/r-22.xflip",
+    "holo": [
+      {
+        "preset": "foil",
+        "intensity": 0.3
+      }
+    ]
+  },
+  {
+    "id": "r-23",
+    "name": "Rare #23",
+    "rarity": "r",
+    "rarityLabel": "Rare",
+    "rate": 0.25,
+    "score": 20,
+    "source": "https://danbooru.donmai.us/posts/11409798",
+    "src": "gacha/hsr/r-23.xflip",
+    "holo": [
+      {
+        "preset": "foil",
+        "intensity": 0.3
+      }
+    ]
+  },
+  {
+    "id": "r-24",
+    "name": "Rare #24",
+    "rarity": "r",
+    "rarityLabel": "Rare",
+    "rate": 0.25,
+    "score": 25,
+    "source": "https://danbooru.donmai.us/posts/11408818",
+    "src": "gacha/hsr/r-24.xflip",
+    "holo": [
+      {
+        "preset": "foil",
+        "intensity": 0.3
+      }
+    ]
+  },
+  {
+    "id": "r-25",
+    "name": "Rare #25",
+    "rarity": "r",
+    "rarityLabel": "Rare",
+    "rate": 0.25,
+    "score": 21,
+    "source": "https://danbooru.donmai.us/posts/11407412",
+    "src": "gacha/hsr/r-25.xflip",
+    "holo": [
+      {
+        "preset": "foil",
+        "intensity": 0.3
+      }
+    ]
+  },
+  {
+    "id": "r-26",
+    "name": "Rare #26",
+    "rarity": "r",
+    "rarityLabel": "Rare",
+    "rate": 0.25,
+    "score": 21,
+    "source": "https://danbooru.donmai.us/posts/11405074",
+    "src": "gacha/hsr/r-26.xflip",
+    "holo": [
+      {
+        "preset": "foil",
+        "intensity": 0.3
+      }
+    ]
+  },
+  {
+    "id": "r-27",
+    "name": "Rare #27",
+    "rarity": "r",
+    "rarityLabel": "Rare",
+    "rate": 0.25,
+    "score": 28,
+    "source": "https://danbooru.donmai.us/posts/11404068",
+    "src": "gacha/hsr/r-27.xflip",
+    "holo": [
+      {
+        "preset": "foil",
+        "intensity": 0.3
+      }
+    ]
+  },
+  {
+    "id": "r-28",
+    "name": "Rare #28",
+    "rarity": "r",
+    "rarityLabel": "Rare",
+    "rate": 0.25,
+    "score": 22,
+    "source": "https://danbooru.donmai.us/posts/11403797",
+    "src": "gacha/hsr/r-28.xflip",
+    "holo": [
+      {
+        "preset": "foil",
+        "intensity": 0.3
+      }
+    ]
+  },
+  {
+    "id": "r-29",
+    "name": "Rare #29",
+    "rarity": "r",
+    "rarityLabel": "Rare",
+    "rate": 0.25,
+    "score": 20,
+    "source": "https://danbooru.donmai.us/posts/11403253",
+    "src": "gacha/hsr/r-29.xflip",
+    "holo": [
+      {
+        "preset": "foil",
+        "intensity": 0.3
+      }
+    ]
+  },
+  {
+    "id": "r-30",
+    "name": "Rare #30",
+    "rarity": "r",
+    "rarityLabel": "Rare",
+    "rate": 0.25,
+    "score": 23,
+    "source": "https://danbooru.donmai.us/posts/11402798",
+    "src": "gacha/hsr/r-30.xflip",
+    "holo": [
+      {
+        "preset": "foil",
+        "intensity": 0.3
+      }
+    ]
+  },
+  {
+    "id": "r-31",
+    "name": "Rare #31",
+    "rarity": "r",
+    "rarityLabel": "Rare",
+    "rate": 0.25,
+    "score": 20,
+    "source": "https://danbooru.donmai.us/posts/11399384",
+    "src": "gacha/hsr/r-31.xflip",
+    "holo": [
+      {
+        "preset": "foil",
+        "intensity": 0.3
+      }
+    ]
+  },
+  {
+    "id": "r-32",
+    "name": "Rare #32",
+    "rarity": "r",
+    "rarityLabel": "Rare",
+    "rate": 0.25,
+    "score": 25,
+    "source": "https://danbooru.donmai.us/posts/11398338",
+    "src": "gacha/hsr/r-32.xflip",
+    "holo": [
+      {
+        "preset": "foil",
+        "intensity": 0.3
+      }
+    ]
+  },
+  {
+    "id": "r-33",
+    "name": "Rare #33",
+    "rarity": "r",
+    "rarityLabel": "Rare",
+    "rate": 0.25,
+    "score": 24,
+    "source": "https://danbooru.donmai.us/posts/11398294",
+    "src": "gacha/hsr/r-33.xflip",
+    "holo": [
+      {
+        "preset": "foil",
+        "intensity": 0.3
+      }
+    ]
+  },
+  {
+    "id": "r-34",
+    "name": "Rare #34",
+    "rarity": "r",
+    "rarityLabel": "Rare",
+    "rate": 0.25,
+    "score": 22,
+    "source": "https://danbooru.donmai.us/posts/11395916",
+    "src": "gacha/hsr/r-34.xflip",
+    "holo": [
+      {
+        "preset": "foil",
+        "intensity": 0.3
+      }
+    ]
+  },
+  {
+    "id": "r-35",
+    "name": "Rare #35",
+    "rarity": "r",
+    "rarityLabel": "Rare",
+    "rate": 0.25,
+    "score": 20,
+    "source": "https://danbooru.donmai.us/posts/11393847",
+    "src": "gacha/hsr/r-35.xflip",
+    "holo": [
+      {
+        "preset": "foil",
+        "intensity": 0.3
+      }
+    ]
+  },
+  {
+    "id": "sr-01",
+    "name": "Super Rare #01",
+    "rarity": "sr",
+    "rarityLabel": "Super Rare",
+    "rate": 0.1,
+    "score": 33,
+    "source": "https://danbooru.donmai.us/posts/11406689",
+    "src": "gacha/hsr/sr-01.xflip",
+    "holo": [
+      {
+        "preset": "rainbow",
+        "intensity": 0.85
+      }
+    ]
+  },
+  {
+    "id": "sr-02",
+    "name": "Super Rare #02",
+    "rarity": "sr",
+    "rarityLabel": "Super Rare",
+    "rate": 0.1,
+    "score": 34,
+    "source": "https://danbooru.donmai.us/posts/11401320",
+    "src": "gacha/hsr/sr-02.xflip",
+    "holo": [
+      {
+        "preset": "aurora",
+        "intensity": 0.85
+      }
+    ]
+  },
+  {
+    "id": "sr-03",
+    "name": "Super Rare #03",
+    "rarity": "sr",
+    "rarityLabel": "Super Rare",
+    "rate": 0.1,
+    "score": 34,
+    "source": "https://danbooru.donmai.us/posts/11399724",
+    "src": "gacha/hsr/sr-03.xflip",
+    "holo": [
+      {
+        "preset": "rainbow",
+        "intensity": 0.85
+      }
+    ]
+  },
+  {
+    "id": "sr-04",
+    "name": "Super Rare #04",
+    "rarity": "sr",
+    "rarityLabel": "Super Rare",
+    "rate": 0.1,
+    "score": 34,
+    "source": "https://danbooru.donmai.us/posts/11398343",
+    "src": "gacha/hsr/sr-04.xflip",
+    "holo": [
+      {
+        "preset": "aurora",
+        "intensity": 0.85
+      }
+    ]
+  },
+  {
+    "id": "sr-05",
+    "name": "Super Rare #05",
+    "rarity": "sr",
+    "rarityLabel": "Super Rare",
+    "rate": 0.1,
+    "score": 35,
+    "source": "https://danbooru.donmai.us/posts/11398334",
+    "src": "gacha/hsr/sr-05.xflip",
+    "holo": [
+      {
+        "preset": "rainbow",
+        "intensity": 0.85
+      }
+    ]
+  },
+  {
+    "id": "sr-06",
+    "name": "Super Rare #06",
+    "rarity": "sr",
+    "rarityLabel": "Super Rare",
+    "rate": 0.1,
+    "score": 35,
+    "source": "https://danbooru.donmai.us/posts/11397491",
+    "src": "gacha/hsr/sr-06.xflip",
+    "holo": [
+      {
+        "preset": "aurora",
+        "intensity": 0.85
+      }
+    ]
+  },
+  {
+    "id": "sr-07",
+    "name": "Super Rare #07",
+    "rarity": "sr",
+    "rarityLabel": "Super Rare",
+    "rate": 0.1,
+    "score": 31,
+    "source": "https://danbooru.donmai.us/posts/11390436",
+    "src": "gacha/hsr/sr-07.xflip",
+    "holo": [
+      {
+        "preset": "rainbow",
+        "intensity": 0.85
+      }
+    ]
+  },
+  {
+    "id": "sr-08",
+    "name": "Super Rare #08",
+    "rarity": "sr",
+    "rarityLabel": "Super Rare",
+    "rate": 0.1,
+    "score": 32,
+    "source": "https://danbooru.donmai.us/posts/11385911",
+    "src": "gacha/hsr/sr-08.xflip",
+    "holo": [
+      {
+        "preset": "aurora",
+        "intensity": 0.85
+      }
+    ]
+  },
+  {
+    "id": "sr-09",
+    "name": "Super Rare #09",
+    "rarity": "sr",
+    "rarityLabel": "Super Rare",
+    "rate": 0.1,
+    "score": 31,
+    "source": "https://danbooru.donmai.us/posts/11385027",
+    "src": "gacha/hsr/sr-09.xflip",
+    "holo": [
+      {
+        "preset": "rainbow",
+        "intensity": 0.85
+      }
+    ]
+  },
+  {
+    "id": "sr-10",
+    "name": "Super Rare #10",
+    "rarity": "sr",
+    "rarityLabel": "Super Rare",
+    "rate": 0.1,
+    "score": 31,
+    "source": "https://danbooru.donmai.us/posts/11383381",
+    "src": "gacha/hsr/sr-10.xflip",
+    "holo": [
+      {
+        "preset": "aurora",
+        "intensity": 0.85
+      }
+    ]
+  },
+  {
+    "id": "sr-11",
+    "name": "Super Rare #11",
+    "rarity": "sr",
+    "rarityLabel": "Super Rare",
+    "rate": 0.1,
+    "score": 30,
+    "source": "https://danbooru.donmai.us/posts/11382665",
+    "src": "gacha/hsr/sr-11.xflip",
+    "holo": [
+      {
+        "preset": "rainbow",
+        "intensity": 0.85
+      }
+    ]
+  },
+  {
+    "id": "sr-12",
+    "name": "Super Rare #12",
+    "rarity": "sr",
+    "rarityLabel": "Super Rare",
+    "rate": 0.1,
+    "score": 37,
+    "source": "https://danbooru.donmai.us/posts/11375764",
+    "src": "gacha/hsr/sr-12.xflip",
+    "holo": [
+      {
+        "preset": "aurora",
+        "intensity": 0.85
+      }
+    ]
+  },
+  {
+    "id": "sr-13",
+    "name": "Super Rare #13",
+    "rarity": "sr",
+    "rarityLabel": "Super Rare",
+    "rate": 0.1,
+    "score": 30,
+    "source": "https://danbooru.donmai.us/posts/11374730",
+    "src": "gacha/hsr/sr-13.xflip",
+    "holo": [
+      {
+        "preset": "rainbow",
+        "intensity": 0.85
+      }
+    ]
+  },
+  {
+    "id": "sr-14",
+    "name": "Super Rare #14",
+    "rarity": "sr",
+    "rarityLabel": "Super Rare",
+    "rate": 0.1,
+    "score": 34,
+    "source": "https://danbooru.donmai.us/posts/11374530",
+    "src": "gacha/hsr/sr-14.xflip",
+    "holo": [
+      {
+        "preset": "aurora",
+        "intensity": 0.85
+      }
+    ]
+  },
+  {
+    "id": "sr-15",
+    "name": "Super Rare #15",
+    "rarity": "sr",
+    "rarityLabel": "Super Rare",
+    "rate": 0.1,
+    "score": 35,
+    "source": "https://danbooru.donmai.us/posts/11368727",
+    "src": "gacha/hsr/sr-15.xflip",
+    "holo": [
+      {
+        "preset": "rainbow",
+        "intensity": 0.85
+      }
+    ]
+  },
+  {
+    "id": "sr-16",
+    "name": "Super Rare #16",
+    "rarity": "sr",
+    "rarityLabel": "Super Rare",
+    "rate": 0.1,
+    "score": 33,
+    "source": "https://danbooru.donmai.us/posts/11366650",
+    "src": "gacha/hsr/sr-16.xflip",
+    "holo": [
+      {
+        "preset": "aurora",
+        "intensity": 0.85
+      }
+    ]
+  },
+  {
+    "id": "sr-17",
+    "name": "Super Rare #17",
+    "rarity": "sr",
+    "rarityLabel": "Super Rare",
+    "rate": 0.1,
+    "score": 38,
+    "source": "https://danbooru.donmai.us/posts/11366289",
+    "src": "gacha/hsr/sr-17.xflip",
+    "holo": [
+      {
+        "preset": "rainbow",
+        "intensity": 0.85
+      }
+    ]
+  },
+  {
+    "id": "sr-18",
+    "name": "Super Rare #18",
+    "rarity": "sr",
+    "rarityLabel": "Super Rare",
+    "rate": 0.1,
+    "score": 31,
+    "source": "https://danbooru.donmai.us/posts/11366025",
+    "src": "gacha/hsr/sr-18.xflip",
+    "holo": [
+      {
+        "preset": "aurora",
+        "intensity": 0.85
+      }
+    ]
+  },
+  {
+    "id": "sr-19",
+    "name": "Super Rare #19",
+    "rarity": "sr",
+    "rarityLabel": "Super Rare",
+    "rate": 0.1,
+    "score": 30,
+    "source": "https://danbooru.donmai.us/posts/11365208",
+    "src": "gacha/hsr/sr-19.xflip",
+    "holo": [
+      {
+        "preset": "rainbow",
+        "intensity": 0.85
+      }
+    ]
+  },
+  {
+    "id": "sr-20",
+    "name": "Super Rare #20",
+    "rarity": "sr",
+    "rarityLabel": "Super Rare",
+    "rate": 0.1,
+    "score": 36,
+    "source": "https://danbooru.donmai.us/posts/11365167",
+    "src": "gacha/hsr/sr-20.xflip",
+    "holo": [
+      {
+        "preset": "aurora",
+        "intensity": 0.85
+      }
+    ]
+  },
+  {
+    "id": "sr-21",
+    "name": "Super Rare #21",
+    "rarity": "sr",
+    "rarityLabel": "Super Rare",
+    "rate": 0.1,
+    "score": 36,
+    "source": "https://danbooru.donmai.us/posts/11364310",
+    "src": "gacha/hsr/sr-21.xflip",
+    "holo": [
+      {
+        "preset": "rainbow",
+        "intensity": 0.85
+      }
+    ]
+  },
+  {
+    "id": "sr-22",
+    "name": "Super Rare #22",
+    "rarity": "sr",
+    "rarityLabel": "Super Rare",
+    "rate": 0.1,
+    "score": 33,
+    "source": "https://danbooru.donmai.us/posts/11354469",
+    "src": "gacha/hsr/sr-22.xflip",
+    "holo": [
+      {
+        "preset": "aurora",
+        "intensity": 0.85
+      }
+    ]
+  },
+  {
+    "id": "sr-23",
+    "name": "Super Rare #23",
+    "rarity": "sr",
+    "rarityLabel": "Super Rare",
+    "rate": 0.1,
+    "score": 37,
+    "source": "https://danbooru.donmai.us/posts/11347112",
+    "src": "gacha/hsr/sr-23.xflip",
+    "holo": [
+      {
+        "preset": "rainbow",
+        "intensity": 0.85
+      }
+    ]
+  },
+  {
+    "id": "sr-24",
+    "name": "Super Rare #24",
+    "rarity": "sr",
+    "rarityLabel": "Super Rare",
+    "rate": 0.1,
+    "score": 34,
+    "source": "https://danbooru.donmai.us/posts/11346220",
+    "src": "gacha/hsr/sr-24.xflip",
+    "holo": [
+      {
+        "preset": "aurora",
+        "intensity": 0.85
+      }
+    ]
+  },
+  {
+    "id": "sr-25",
+    "name": "Super Rare #25",
+    "rarity": "sr",
+    "rarityLabel": "Super Rare",
+    "rate": 0.1,
+    "score": 31,
+    "source": "https://danbooru.donmai.us/posts/11346094",
+    "src": "gacha/hsr/sr-25.xflip",
+    "holo": [
+      {
+        "preset": "rainbow",
+        "intensity": 0.85
+      }
+    ]
+  },
+  {
+    "id": "ssr-01",
+    "name": "SSR #01",
+    "rarity": "ssr",
+    "rarityLabel": "SSR",
+    "rate": 0.045,
+    "score": 40,
+    "source": "https://danbooru.donmai.us/posts/11413561",
+    "src": "gacha/hsr/ssr-01.xflip",
+    "holo": [
+      {
+        "preset": "gold",
+        "intensity": 1
+      },
+      {
+        "preset": "foil",
+        "intensity": 0.5
+      }
+    ]
+  },
+  {
+    "id": "ssr-02",
+    "name": "SSR #02",
+    "rarity": "ssr",
+    "rarityLabel": "SSR",
+    "rate": 0.045,
+    "score": 45,
+    "source": "https://danbooru.donmai.us/posts/11398678",
+    "src": "gacha/hsr/ssr-02.xflip",
+    "holo": [
+      {
+        "preset": "galaxy",
+        "intensity": 1
+      },
+      {
+        "preset": "foil",
+        "intensity": 0.5
+      }
+    ]
+  },
+  {
+    "id": "ssr-03",
+    "name": "SSR #03",
+    "rarity": "ssr",
+    "rarityLabel": "SSR",
+    "rate": 0.045,
+    "score": 59,
+    "source": "https://danbooru.donmai.us/posts/11393508",
+    "src": "gacha/hsr/ssr-03.xflip",
+    "holo": [
+      {
+        "preset": "emerald",
+        "intensity": 1
+      },
+      {
+        "preset": "foil",
+        "intensity": 0.5
+      }
+    ]
+  },
+  {
+    "id": "ssr-04",
+    "name": "SSR #04",
+    "rarity": "ssr",
+    "rarityLabel": "SSR",
+    "rate": 0.045,
+    "score": 48,
+    "source": "https://danbooru.donmai.us/posts/11374460",
+    "src": "gacha/hsr/ssr-04.xflip",
+    "holo": [
+      {
+        "preset": "ruby",
+        "intensity": 1
+      },
+      {
+        "preset": "foil",
+        "intensity": 0.5
+      }
+    ]
+  },
+  {
+    "id": "ssr-05",
+    "name": "SSR #05",
+    "rarity": "ssr",
+    "rarityLabel": "SSR",
+    "rate": 0.045,
+    "score": 52,
+    "source": "https://danbooru.donmai.us/posts/11364254",
+    "src": "gacha/hsr/ssr-05.xflip",
+    "holo": [
+      {
+        "preset": "gold",
+        "intensity": 1
+      },
+      {
+        "preset": "foil",
+        "intensity": 0.5
+      }
+    ]
+  },
+  {
+    "id": "ssr-06",
+    "name": "SSR #06",
+    "rarity": "ssr",
+    "rarityLabel": "SSR",
+    "rate": 0.045,
+    "score": 41,
+    "source": "https://danbooru.donmai.us/posts/11354585",
+    "src": "gacha/hsr/ssr-06.xflip",
+    "holo": [
+      {
+        "preset": "galaxy",
+        "intensity": 1
+      },
+      {
+        "preset": "foil",
+        "intensity": 0.5
+      }
+    ]
+  },
+  {
+    "id": "ssr-07",
+    "name": "SSR #07",
+    "rarity": "ssr",
+    "rarityLabel": "SSR",
+    "rate": 0.045,
+    "score": 44,
+    "source": "https://danbooru.donmai.us/posts/11351966",
+    "src": "gacha/hsr/ssr-07.xflip",
+    "holo": [
+      {
+        "preset": "emerald",
+        "intensity": 1
+      },
+      {
+        "preset": "foil",
+        "intensity": 0.5
+      }
+    ]
+  },
+  {
+    "id": "ssr-08",
+    "name": "SSR #08",
+    "rarity": "ssr",
+    "rarityLabel": "SSR",
+    "rate": 0.045,
+    "score": 44,
+    "source": "https://danbooru.donmai.us/posts/11330116",
+    "src": "gacha/hsr/ssr-08.xflip",
+    "holo": [
+      {
+        "preset": "ruby",
+        "intensity": 1
+      },
+      {
+        "preset": "foil",
+        "intensity": 0.5
+      }
+    ]
+  },
+  {
+    "id": "ssr-09",
+    "name": "SSR #09",
+    "rarity": "ssr",
+    "rarityLabel": "SSR",
+    "rate": 0.045,
+    "score": 41,
+    "source": "https://danbooru.donmai.us/posts/11324257",
+    "src": "gacha/hsr/ssr-09.xflip",
+    "holo": [
+      {
+        "preset": "gold",
+        "intensity": 1
+      },
+      {
+        "preset": "foil",
+        "intensity": 0.5
+      }
+    ]
+  },
+  {
+    "id": "ssr-10",
+    "name": "SSR #10",
+    "rarity": "ssr",
+    "rarityLabel": "SSR",
+    "rate": 0.045,
+    "score": 44,
+    "source": "https://danbooru.donmai.us/posts/11317734",
+    "src": "gacha/hsr/ssr-10.xflip",
+    "holo": [
+      {
+        "preset": "galaxy",
+        "intensity": 1
+      },
+      {
+        "preset": "foil",
+        "intensity": 0.5
+      }
+    ]
+  },
+  {
+    "id": "ssr-11",
+    "name": "SSR #11",
+    "rarity": "ssr",
+    "rarityLabel": "SSR",
+    "rate": 0.045,
+    "score": 43,
+    "source": "https://danbooru.donmai.us/posts/11311762",
+    "src": "gacha/hsr/ssr-11.xflip",
+    "holo": [
+      {
+        "preset": "emerald",
+        "intensity": 1
+      },
+      {
+        "preset": "foil",
+        "intensity": 0.5
+      }
+    ]
+  },
+  {
+    "id": "ssr-12",
+    "name": "SSR #12",
+    "rarity": "ssr",
+    "rarityLabel": "SSR",
+    "rate": 0.045,
+    "score": 41,
+    "source": "https://danbooru.donmai.us/posts/11311214",
+    "src": "gacha/hsr/ssr-12.xflip",
+    "holo": [
+      {
+        "preset": "ruby",
+        "intensity": 1
+      },
+      {
+        "preset": "foil",
+        "intensity": 0.5
+      }
+    ]
+  },
+  {
+    "id": "ur-01",
+    "name": "Ultra Rare #01",
+    "rarity": "ur",
+    "rarityLabel": "Ultra Rare",
+    "rate": 0.005,
+    "score": 76,
+    "source": "https://danbooru.donmai.us/posts/11332618",
+    "src": "gacha/hsr/ur-01.xflip",
+    "holo": [
+      {
+        "preset": "galaxy",
+        "intensity": 0.85
+      },
+      {
+        "preset": "pearl",
+        "intensity": 0.55
+      },
+      {
+        "preset": "gold",
+        "intensity": 0.5
+      }
+    ]
+  },
+  {
+    "id": "ur-02",
+    "name": "Ultra Rare #02",
+    "rarity": "ur",
+    "rarityLabel": "Ultra Rare",
+    "rate": 0.005,
+    "score": 72,
+    "source": "https://danbooru.donmai.us/posts/11328483",
+    "src": "gacha/hsr/ur-02.xflip",
+    "holo": [
+      {
+        "preset": "galaxy",
+        "intensity": 0.85
+      },
+      {
+        "preset": "pearl",
+        "intensity": 0.55
+      },
+      {
+        "preset": "gold",
+        "intensity": 0.5
+      }
+    ]
+  },
+  {
+    "id": "ur-03",
+    "name": "Ultra Rare #03",
+    "rarity": "ur",
+    "rarityLabel": "Ultra Rare",
+    "rate": 0.005,
+    "score": 146,
+    "source": "https://danbooru.donmai.us/posts/11242191",
+    "src": "gacha/hsr/ur-03.xflip",
+    "holo": [
+      {
+        "preset": "galaxy",
+        "intensity": 0.85
+      },
+      {
+        "preset": "pearl",
+        "intensity": 0.55
+      },
+      {
+        "preset": "gold",
+        "intensity": 0.5
+      }
+    ]
+  }
+]

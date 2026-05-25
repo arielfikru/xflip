@@ -13,8 +13,7 @@
     "typecheck": "tsc --noEmit",
     "fixtures": "pnpm --filter @xflip/core build && node scripts/build-fixtures.mjs",
     "gacha": "pnpm --filter @xflip/core build && node scripts/build-gacha.mjs",
-    "pack120": "pnpm --filter @xflip/core build && node scripts/build-danbooru.mjs",
-    "pack120:encode": "pnpm --filter @xflip/core build && node scripts/encode-pack120.mjs",
+    "encode-pack": "pnpm --filter @xflip/core build && node scripts/encode-pack.mjs",
     "test": "vitest run --passWithNoTests"
   },
   "dependencies": {
