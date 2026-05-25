@@ -1,5 +1,6 @@
 import { XflipCard } from '@xflip/react';
-import { useEffect, useMemo, useState } from 'react';
+import { type FormEvent, useEffect, useMemo, useState } from 'react';
+import { currentUser, login, logout, register } from './auth';
 
 type Rarity = 'c' | 'r' | 'sr' | 'ssr' | 'ur';
 
@@ -27,20 +28,25 @@ type Phase = 'home' | 'opening' | 'reveal' | 'summary' | 'collection' | 'index';
 
 const RARITY_ORDER: Record<Rarity, number> = { c: 0, r: 1, sr: 2, ssr: 3, ur: 4 };
 const PACK_SIZE = 6;
-const STORAGE_KEY = 'xflip-gacha-collection';
+const GOD_PACK_RATE = 0.01; // 1% — every card SR or better
+const COLLECTION_PREFIX = 'xflip-gacha-collection';
 
-function loadCollection(): Record<string, number> {
+function collectionKey(user: string): string {
+  return `${COLLECTION_PREFIX}:${user}`;
+}
+
+function loadCollection(user: string): Record<string, number> {
   try {
-    const raw = localStorage.getItem(STORAGE_KEY);
+    const raw = localStorage.getItem(collectionKey(user));
     return raw ? (JSON.parse(raw) as Record<string, number>) : {};
   } catch {
     return {};
   }
 }
 
-function saveCollection(c: Record<string, number>): void {
+function saveCollection(user: string, c: Record<string, number>): void {
   try {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(c));
+    localStorage.setItem(collectionKey(user), JSON.stringify(c));
   } catch {
     /* ignore quota / unavailable */
   }
@@ -56,55 +62,144 @@ function pickRarity(rates: { rarity: Rarity; rate: number }[]): Rarity {
   return rates[rates.length - 1]?.rarity ?? 'r';
 }
 
-function drawPack(pool: CardDef[]): CardDef[] {
+function ratesOf(pool: CardDef[]): { rarity: Rarity; rate: number }[] {
+  const seen = new Map<Rarity, number>();
+  for (const c of pool) if (!seen.has(c.rarity)) seen.set(c.rarity, c.rate);
+  return [...seen.entries()].map(([rarity, rate]) => ({ rarity, rate }));
+}
+
+function drawFrom(pool: CardDef[], rates: { rarity: Rarity; rate: number }[]): CardDef[] {
   const first = pool[0];
   if (!first) return [];
-
   const byRarity = new Map<Rarity, CardDef[]>();
   for (const c of pool) {
     const arr = byRarity.get(c.rarity) ?? [];
     arr.push(c);
     byRarity.set(c.rarity, arr);
   }
-  const rates = [...byRarity.entries()].map(([rarity, arr]) => ({
-    rarity,
-    rate: arr[0]?.rate ?? 0,
-  }));
-
   const drawOne = (rarity: Rarity): CardDef => {
     const arr = byRarity.get(rarity) ?? [];
     return arr[Math.floor(Math.random() * arr.length)] ?? first;
   };
-
   const cards: CardDef[] = [];
   for (let i = 0; i < PACK_SIZE; i++) cards.push(drawOne(pickRarity(rates)));
+  return cards;
+}
 
-  // Pity: guarantee at least one SR+ per pack.
-  if (!cards.some((c) => RARITY_ORDER[c.rarity] >= 1)) {
-    const srPlus = rates.filter((x) => RARITY_ORDER[x.rarity] >= 1);
-    if (srPlus.length) cards[PACK_SIZE - 1] = drawOne(pickRarity(srPlus));
+// Normal pack: weighted across all tiers, with a pity SR+ guarantee.
+function drawPack(pool: CardDef[]): CardDef[] {
+  const cards = drawFrom(pool, ratesOf(pool));
+  if (cards.length && !cards.some((c) => RARITY_ORDER[c.rarity] >= 2)) {
+    const srPlus = ratesOf(pool).filter((x) => RARITY_ORDER[x.rarity] >= 2);
+    const pity = drawFrom(
+      pool.filter((c) => RARITY_ORDER[c.rarity] >= 2),
+      srPlus,
+    )[0];
+    if (pity) cards[PACK_SIZE - 1] = pity;
   }
-
-  // Reveal worst→best so the best card sits at the back and is revealed last.
   cards.sort((a, b) => RARITY_ORDER[a.rarity] - RARITY_ORDER[b.rarity]);
   return cards;
 }
 
+// God pack: only SR / SSR / UR, weighted among those tiers. No C or R.
+function drawGodPack(pool: CardDef[]): CardDef[] {
+  const elite = pool.filter((c) => RARITY_ORDER[c.rarity] >= 2);
+  if (elite.length < 1) return drawPack(pool);
+  const cards = drawFrom(elite, ratesOf(elite));
+  cards.sort((a, b) => RARITY_ORDER[a.rarity] - RARITY_ORDER[b.rarity]);
+  return cards;
+}
+
+function AuthScreen({ onAuthed }: { onAuthed: (user: string) => void }): JSX.Element {
+  const [mode, setMode] = useState<'login' | 'register'>('login');
+  const [username, setUsername] = useState('');
+  const [password, setPassword] = useState('');
+  const [error, setError] = useState('');
+  const [busy, setBusy] = useState(false);
+
+  async function submit(e: FormEvent): Promise<void> {
+    e.preventDefault();
+    setError('');
+    setBusy(true);
+    try {
+      const user =
+        mode === 'login' ? await login(username, password) : await register(username, password);
+      onAuthed(user);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Something went wrong');
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  return (
+    <main className="gacha auth-page">
+      <div className="auth-card">
+        <h1>
+          xflip <span>gacha</span>
+        </h1>
+        <p className="hint">Sign in to keep your collection</p>
+        <div className="auth-tabs">
+          <button
+            type="button"
+            className={mode === 'login' ? 'active' : ''}
+            onClick={() => setMode('login')}
+          >
+            Log in
+          </button>
+          <button
+            type="button"
+            className={mode === 'register' ? 'active' : ''}
+            onClick={() => setMode('register')}
+          >
+            Register
+          </button>
+        </div>
+        <form onSubmit={submit} className="auth-form">
+          <label>
+            Username
+            <input
+              type="text"
+              autoComplete="username"
+              value={username}
+              onChange={(e) => setUsername(e.target.value)}
+            />
+          </label>
+          <label>
+            Password
+            <input
+              type="password"
+              autoComplete={mode === 'login' ? 'current-password' : 'new-password'}
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+            />
+          </label>
+          {error && <span className="auth-error">{error}</span>}
+          <button type="submit" className="primary" disabled={busy}>
+            {busy ? '…' : mode === 'login' ? 'Log in' : 'Create account'}
+          </button>
+        </form>
+        <p className="hint warn">Local demo accounts only — stored in this browser.</p>
+      </div>
+    </main>
+  );
+}
+
 export function App(): JSX.Element {
+  const [user, setUser] = useState<string | null>(currentUser());
   const [packs, setPacks] = useState<PackDef[]>([]);
   const [pool, setPool] = useState<CardDef[]>([]);
   const [phase, setPhase] = useState<Phase>('home');
   const [activePack, setActivePack] = useState<PackDef | null>(null);
   const [pack, setPack] = useState<{ card: CardDef; uid: string }[]>([]);
+  const [isGod, setIsGod] = useState(false);
   const [index, setIndex] = useState(0); // current card in the deck
   const [flipped, setFlipped] = useState(false); // current card revealed?
   const [exiting, setExiting] = useState(false); // current card sliding away?
   const [collection, setCollection] = useState<Record<string, number>>({});
-  const [saved, setSaved] = useState(false);
   const [detail, setDetail] = useState<CardDef | null>(null);
 
   useEffect(() => {
-    setCollection(loadCollection());
     fetch('gacha/packs.json')
       .then((r) => r.json())
       .then(async (defs: PackDef[]) => {
@@ -123,6 +218,10 @@ export function App(): JSX.Element {
       });
   }, []);
 
+  useEffect(() => {
+    setCollection(user ? loadCollection(user) : {});
+  }, [user]);
+
   const byGid = useMemo(() => {
     const m = new Map<string, CardDef>();
     for (const c of pool) m.set(c.gid, c);
@@ -130,14 +229,26 @@ export function App(): JSX.Element {
   }, [pool]);
 
   function openPack(p: PackDef): void {
+    if (!user) return;
     const subset = pool.filter((c) => c.pack === p.id);
     if (!subset.length) return;
+    const god = Math.random() < GOD_PACK_RATE;
+    const drawn = god ? drawGodPack(subset) : drawPack(subset);
+
+    // Auto-save: gacha results always land in the collection immediately.
+    setCollection((prev) => {
+      const next = { ...prev };
+      for (const card of drawn) next[card.gid] = (next[card.gid] ?? 0) + 1;
+      saveCollection(user, next);
+      return next;
+    });
+
     setActivePack(p);
-    setPack(drawPack(subset).map((card) => ({ card, uid: crypto.randomUUID() })));
+    setIsGod(god);
+    setPack(drawn.map((card) => ({ card, uid: crypto.randomUUID() })));
     setIndex(0);
     setFlipped(false);
     setExiting(false);
-    setSaved(false);
     setDetail(null);
     setPhase('opening');
     window.setTimeout(() => setPhase('reveal'), 1100);
@@ -157,14 +268,10 @@ export function App(): JSX.Element {
     }, 420);
   }
 
-  function saveToCollection(): void {
-    setCollection((prev) => {
-      const next = { ...prev };
-      for (const { card } of pack) next[card.gid] = (next[card.gid] ?? 0) + 1;
-      saveCollection(next);
-      return next;
-    });
-    setSaved(true);
+  function doLogout(): void {
+    logout();
+    setUser(null);
+    setPhase('home');
   }
 
   const bestRarity = useMemo<Rarity>(() => {
@@ -175,6 +282,8 @@ export function App(): JSX.Element {
   }, [pack]);
 
   const backSrc = activePack?.back ?? 'gacha/waifu/back.jpg';
+
+  if (!user) return <AuthScreen onAuthed={setUser} />;
 
   return (
     <main className="gacha">
@@ -204,6 +313,12 @@ export function App(): JSX.Element {
           >
             Packs
           </button>
+          <span className="user-chip">
+            <span className="user-name">{user}</span>
+            <button type="button" className="logout" onClick={doLogout}>
+              Log out
+            </button>
+          </span>
         </nav>
       </header>
 
@@ -235,8 +350,8 @@ export function App(): JSX.Element {
             <span className="hint warn">loading packs…</span>
           )}
           <p className="hint">
-            {PACK_SIZE} cards per pack · guaranteed SR or better · holo escalates with rarity · best
-            card last
+            {PACK_SIZE} cards per pack · auto-saved to your collection ·{' '}
+            {(GOD_PACK_RATE * 100).toFixed(0)}% god pack (all SR+)
           </p>
           <div className="odds">
             {pool.length ? (
@@ -261,7 +376,7 @@ export function App(): JSX.Element {
 
       {phase === 'opening' && (
         <section className="opening">
-          <div className={`rip-scene rarity-${bestRarity}`}>
+          <div className={`rip-scene rarity-${bestRarity} ${isGod ? 'god' : ''}`}>
             <div className="rip-flash" />
             <div className="pack-half top">
               <div className="pack-face">
@@ -282,12 +397,13 @@ export function App(): JSX.Element {
               </div>
             </div>
           </div>
-          <p className="hint">tearing open…</p>
+          <p className="hint">{isGod ? '✨ something feels special… ✨' : 'tearing open…'}</p>
         </section>
       )}
 
       {phase === 'reveal' && (
         <section className="reveal-stack">
+          {isGod && <div className="god-banner">✨ GOD PACK ✨</div>}
           <div className="counter">
             {index + 1} / {pack.length}
           </div>
@@ -357,7 +473,8 @@ export function App(): JSX.Element {
 
       {phase === 'summary' && (
         <section className="summary">
-          <h2>Pack results</h2>
+          <h2>{isGod ? '✨ God Pack results ✨' : 'Pack results'}</h2>
+          <p className="hint">Added to your collection ✓</p>
           <div className="summary-grid">
             {pack.map(({ card: c, uid }) => (
               <button
@@ -373,11 +490,8 @@ export function App(): JSX.Element {
             ))}
           </div>
           <div className="actions">
-            <button type="button" className="primary" disabled={saved} onClick={saveToCollection}>
-              {saved ? 'Saved ✓' : 'Save to collection'}
-            </button>
             {activePack && (
-              <button type="button" className="ghost" onClick={() => openPack(activePack)}>
+              <button type="button" className="primary" onClick={() => openPack(activePack)}>
                 Open another {activePack.name}
               </button>
             )}
