@@ -376,7 +376,11 @@ describe('XflipCardElement fetch + decode lifecycle', () => {
     el.setAttribute('src', './card.xflip');
     await loaded;
     const holos = el.shadowRoot?.querySelectorAll('.holo');
-    expect(holos).toHaveLength(2);
+    // 3 stacked slots per face × 2 faces.
+    expect(holos).toHaveLength(6);
+    const slot0Front = el.shadowRoot?.querySelector('.holo.front[data-slot="0"]') as HTMLDivElement;
+    expect(slot0Front.dataset.preset).toBe('rainbow');
+    expect(slot0Front.hidden).toBe(false);
     el.remove();
   });
 

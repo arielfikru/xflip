@@ -5,6 +5,8 @@ export {
   XflipCardElement,
   type XflipErrorEventDetail,
   type XflipFace,
+  type XflipHoloLayer,
+  type XflipHoloPreset,
   type XflipLoadEventDetail,
 } from './xflip-card.js';
 

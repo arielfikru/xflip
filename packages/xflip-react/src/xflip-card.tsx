@@ -1,5 +1,10 @@
 import type { XflipFile } from '@xflip/core';
-import type { XflipCardElement, XflipErrorEventDetail, XflipLoadEventDetail } from '@xflip/viewer';
+import type {
+  XflipCardElement,
+  XflipErrorEventDetail,
+  XflipHoloLayer,
+  XflipLoadEventDetail,
+} from '@xflip/viewer';
 import {
   type CSSProperties,
   type ForwardedRef,
@@ -38,6 +43,14 @@ export interface XflipCardProps {
    * disables tilt without removing listeners.
    */
   tiltMax?: number | undefined;
+  /**
+   * Stacked holographic overlay layers (up to 3). Each layer picks a
+   * preset (`'rainbow' | 'foil' | 'prism' | 'gold'`) plus optional
+   * `intensity` (0..1) and `blend` CSS `mix-blend-mode`. Pass `[]` to
+   * disable, or `null` to clear the override and let the loaded file's
+   * META holo config drive the overlay. `undefined` leaves it untouched.
+   */
+  holoLayers?: readonly XflipHoloLayer[] | null | undefined;
   className?: string | undefined;
   style?: CSSProperties | undefined;
   id?: string | undefined;
@@ -88,7 +101,7 @@ function assignRef<T>(ref: ForwardedRef<T>, value: T | null): void {
  */
 export const XflipCard = forwardRef<XflipCardElement, XflipCardProps>(
   function XflipCard(props, forwardedRef): ReactElement {
-    const { src, onLoad, onError, tiltMax, className, style, id, hidden } = props;
+    const { src, onLoad, onError, tiltMax, holoLayers, className, style, id, hidden } = props;
     const ariaLabel = props['aria-label'];
     const elementRef = useRef<XflipCardElement | null>(null);
 
@@ -109,6 +122,25 @@ export const XflipCard = forwardRef<XflipCardElement, XflipCardProps>(
       const el = elementRef.current;
       if (el) el.tiltMax = tiltMax;
     }, [tiltMax]);
+
+    useEffect(() => {
+      if (holoLayers === undefined) return;
+      const el = elementRef.current;
+      if (el) el.holoLayers = holoLayers;
+    }, [holoLayers]);
+
+    // Re-apply the override (or auto) after a new src loads, so the file's
+    // META holo doesn't get the final word when the caller pinned layers.
+    useEffect(() => {
+      if (holoLayers === undefined) return;
+      const el = elementRef.current;
+      if (!el) return;
+      const handler = (): void => {
+        el.holoLayers = holoLayers;
+      };
+      el.addEventListener('xflip-load', handler);
+      return () => el.removeEventListener('xflip-load', handler);
+    }, [holoLayers]);
 
     useEffect(() => {
       const el = elementRef.current;

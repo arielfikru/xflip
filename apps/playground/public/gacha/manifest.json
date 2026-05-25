@@ -1,0 +1,236 @@
+[
+  {
+    "id": "r-01",
+    "name": "R #01",
+    "rarity": "r",
+    "rarityLabel": "Rare",
+    "rate": 0.793,
+    "src": "gacha/r-01.xflip",
+    "holo": [
+      {
+        "preset": "foil",
+        "intensity": 0.3
+      }
+    ]
+  },
+  {
+    "id": "r-02",
+    "name": "R #02",
+    "rarity": "r",
+    "rarityLabel": "Rare",
+    "rate": 0.793,
+    "src": "gacha/r-02.xflip",
+    "holo": [
+      {
+        "preset": "foil",
+        "intensity": 0.3
+      }
+    ]
+  },
+  {
+    "id": "r-03",
+    "name": "R #03",
+    "rarity": "r",
+    "rarityLabel": "Rare",
+    "rate": 0.793,
+    "src": "gacha/r-03.xflip",
+    "holo": [
+      {
+        "preset": "foil",
+        "intensity": 0.3
+      }
+    ]
+  },
+  {
+    "id": "r-04",
+    "name": "R #04",
+    "rarity": "r",
+    "rarityLabel": "Rare",
+    "rate": 0.793,
+    "src": "gacha/r-04.xflip",
+    "holo": [
+      {
+        "preset": "foil",
+        "intensity": 0.3
+      }
+    ]
+  },
+  {
+    "id": "r-05",
+    "name": "R #05",
+    "rarity": "r",
+    "rarityLabel": "Rare",
+    "rate": 0.793,
+    "src": "gacha/r-05.xflip",
+    "holo": [
+      {
+        "preset": "foil",
+        "intensity": 0.3
+      }
+    ]
+  },
+  {
+    "id": "sr-01",
+    "name": "SR #01",
+    "rarity": "sr",
+    "rarityLabel": "Super Rare",
+    "rate": 0.18,
+    "src": "gacha/sr-01.xflip",
+    "holo": [
+      {
+        "preset": "rainbow",
+        "intensity": 0.85
+      }
+    ]
+  },
+  {
+    "id": "sr-02",
+    "name": "SR #02",
+    "rarity": "sr",
+    "rarityLabel": "Super Rare",
+    "rate": 0.18,
+    "src": "gacha/sr-02.xflip",
+    "holo": [
+      {
+        "preset": "aurora",
+        "intensity": 0.9
+      }
+    ]
+  },
+  {
+    "id": "sr-03",
+    "name": "SR #03",
+    "rarity": "sr",
+    "rarityLabel": "Super Rare",
+    "rate": 0.18,
+    "src": "gacha/sr-03.xflip",
+    "holo": [
+      {
+        "preset": "prism",
+        "intensity": 0.85
+      }
+    ]
+  },
+  {
+    "id": "sr-04",
+    "name": "SR #04",
+    "rarity": "sr",
+    "rarityLabel": "Super Rare",
+    "rate": 0.18,
+    "src": "gacha/sr-04.xflip",
+    "holo": [
+      {
+        "preset": "ice",
+        "intensity": 0.85
+      }
+    ]
+  },
+  {
+    "id": "sr-05",
+    "name": "SR #05",
+    "rarity": "sr",
+    "rarityLabel": "Super Rare",
+    "rate": 0.18,
+    "src": "gacha/sr-05.xflip",
+    "holo": [
+      {
+        "preset": "rainbow",
+        "intensity": 0.9
+      }
+    ]
+  },
+  {
+    "id": "ssr-01",
+    "name": "SSR #01",
+    "rarity": "ssr",
+    "rarityLabel": "SSR",
+    "rate": 0.025,
+    "src": "gacha/ssr-01.xflip",
+    "holo": [
+      {
+        "preset": "gold",
+        "intensity": 1
+      },
+      {
+        "preset": "foil",
+        "intensity": 0.5
+      }
+    ]
+  },
+  {
+    "id": "ssr-02",
+    "name": "SSR #02",
+    "rarity": "ssr",
+    "rarityLabel": "SSR",
+    "rate": 0.025,
+    "src": "gacha/ssr-02.xflip",
+    "holo": [
+      {
+        "preset": "galaxy",
+        "intensity": 1
+      },
+      {
+        "preset": "rainbow",
+        "intensity": 0.45
+      }
+    ]
+  },
+  {
+    "id": "ssr-03",
+    "name": "SSR #03",
+    "rarity": "ssr",
+    "rarityLabel": "SSR",
+    "rate": 0.025,
+    "src": "gacha/ssr-03.xflip",
+    "holo": [
+      {
+        "preset": "emerald",
+        "intensity": 1
+      },
+      {
+        "preset": "foil",
+        "intensity": 0.5
+      }
+    ]
+  },
+  {
+    "id": "ssr-04",
+    "name": "SSR #04",
+    "rarity": "ssr",
+    "rarityLabel": "SSR",
+    "rate": 0.025,
+    "src": "gacha/ssr-04.xflip",
+    "holo": [
+      {
+        "preset": "ruby",
+        "intensity": 1
+      },
+      {
+        "preset": "foil",
+        "intensity": 0.5
+      }
+    ]
+  },
+  {
+    "id": "ur-01",
+    "name": "UR #01",
+    "rarity": "ur",
+    "rarityLabel": "Ultra Rare",
+    "rate": 0.002,
+    "src": "gacha/ur-01.xflip",
+    "holo": [
+      {
+        "preset": "galaxy",
+        "intensity": 0.85
+      },
+      {
+        "preset": "pearl",
+        "intensity": 0.55
+      },
+      {
+        "preset": "gold",
+        "intensity": 0.5
+      }
+    ]
+  }
+]
