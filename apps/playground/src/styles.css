@@ -2,7 +2,8 @@
   color-scheme: dark;
   font-family: ui-sans-serif, system-ui, -apple-system, sans-serif;
 
-  --c-r: #94a3b8;
+  --c-c: #64748b;
+  --c-r: #cbd5e1;
   --c-sr: #38bdf8;
   --c-ssr: #fbbf24;
   --c-ur: #e879f9;
@@ -404,6 +405,7 @@ h2 {
 
 /* rarity glow */
 
+.rarity-c { --glow: var(--c-c); }
 .rarity-r { --glow: var(--c-r); }
 .rarity-sr { --glow: var(--c-sr); }
 .rarity-ssr { --glow: var(--c-ssr); }
@@ -440,6 +442,7 @@ h2 {
   color: #0b1220;
 }
 
+.badge-c { background: var(--c-c); }
 .badge-r { background: var(--c-r); }
 .badge-sr { background: var(--c-sr); }
 .badge-ssr { background: var(--c-ssr); }
@@ -483,6 +486,49 @@ h2 {
 
 .sum-card {
   cursor: pointer;
+}
+
+/* ---------- card index ---------- */
+
+.index-group {
+  max-width: 900px;
+  margin: 0 auto 26px;
+}
+
+.index-head {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 0 0 10px;
+}
+
+.index-head .badge {
+  position: static;
+}
+
+.sum-card.locked {
+  cursor: default;
+  opacity: 0.85;
+}
+
+.locked-art {
+  width: 100%;
+  aspect-ratio: 5 / 7;
+  border-radius: 14px;
+  border: 1px dashed rgba(148, 163, 184, 0.3);
+  background: repeating-linear-gradient(
+    135deg,
+    rgba(30, 41, 59, 0.6),
+    rgba(30, 41, 59, 0.6) 10px,
+    rgba(15, 23, 42, 0.6) 10px,
+    rgba(15, 23, 42, 0.6) 20px
+  );
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 40px;
+  font-weight: 800;
+  color: rgba(148, 163, 184, 0.4);
 }
 
 /* ---------- detail modal ---------- */

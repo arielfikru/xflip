@@ -1,7 +1,7 @@
 import { XflipCard } from '@xflip/react';
 import { useEffect, useMemo, useState } from 'react';
 
-type Rarity = 'r' | 'sr' | 'ssr' | 'ur';
+type Rarity = 'c' | 'r' | 'sr' | 'ssr' | 'ur';
 
 interface CardDef {
   id: string;
@@ -12,9 +12,9 @@ interface CardDef {
   src: string;
 }
 
-type Phase = 'home' | 'opening' | 'reveal' | 'summary' | 'collection';
+type Phase = 'home' | 'opening' | 'reveal' | 'summary' | 'collection' | 'index';
 
-const RARITY_ORDER: Record<Rarity, number> = { r: 0, sr: 1, ssr: 2, ur: 3 };
+const RARITY_ORDER: Record<Rarity, number> = { c: 0, r: 1, sr: 2, ssr: 3, ur: 4 };
 const PACK_SIZE = 6;
 const STORAGE_KEY = 'xflip-gacha-collection';
 const BACK_SRC = 'gacha/back.jpg';
@@ -154,6 +154,13 @@ export function App(): JSX.Element {
         <nav>
           <button
             type="button"
+            className={phase === 'index' ? 'active' : ''}
+            onClick={() => setPhase('index')}
+          >
+            All Cards
+          </button>
+          <button
+            type="button"
             className={phase === 'collection' ? 'active' : ''}
             onClick={() => setPhase('collection')}
           >
@@ -161,7 +168,7 @@ export function App(): JSX.Element {
           </button>
           <button
             type="button"
-            className={phase !== 'collection' ? 'active' : ''}
+            className={phase !== 'collection' && phase !== 'index' ? 'active' : ''}
             onClick={() => setPhase('home')}
           >
             Packs
@@ -366,6 +373,54 @@ export function App(): JSX.Element {
               </>
             );
           })()}
+        </section>
+      )}
+
+      {phase === 'index' && (
+        <section className="collection">
+          <h2>Card Index</h2>
+          <p className="hint">
+            {pool.filter((c) => (collection[c.id] ?? 0) > 0).length}/{pool.length} collected
+          </p>
+          {(['ur', 'ssr', 'sr', 'r', 'c'] as Rarity[]).map((rarity) => {
+            const cards = pool.filter((c) => c.rarity === rarity);
+            if (!cards.length) return null;
+            const ownedN = cards.filter((c) => (collection[c.id] ?? 0) > 0).length;
+            return (
+              <div key={rarity} className="index-group">
+                <div className="index-head">
+                  <span className={`badge badge-${rarity}`}>{cards[0]?.rarityLabel ?? rarity}</span>
+                  <span className="hint">
+                    {ownedN}/{cards.length}
+                  </span>
+                </div>
+                <div className="summary-grid">
+                  {cards.map((c) => {
+                    const owned = (collection[c.id] ?? 0) > 0;
+                    return owned ? (
+                      <button
+                        type="button"
+                        key={c.id}
+                        className={`sum-card rarity-${c.rarity}`}
+                        onClick={() => setDetail(c)}
+                      >
+                        <XflipCard src={c.src} tiltMax={12} />
+                        <span className={`badge badge-${c.rarity}`}>{c.rarityLabel}</span>
+                        <span className="sum-name">{c.name}</span>
+                      </button>
+                    ) : (
+                      <div key={c.id} className="sum-card locked">
+                        <div className="locked-art">
+                          <span>?</span>
+                        </div>
+                        <span className="sum-name muted">Locked</span>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            );
+          })}
         </section>
       )}
 

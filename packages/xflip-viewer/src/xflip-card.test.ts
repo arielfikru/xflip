@@ -270,7 +270,7 @@ describe('XflipCardElement fetch + decode lifecycle', () => {
     el.remove();
   });
 
-  it('click toggles the face when a file is loaded', async () => {
+  it('double-click toggles the face when a file is loaded', async () => {
     mockFetchOk(makeFileBytes());
     const el = document.createElement(XFLIP_CARD_TAG) as XflipCardElement;
     const loaded = waitForEvent<CustomEvent<XflipLoadEventDetail>>(el, 'xflip-load');
@@ -278,17 +278,17 @@ describe('XflipCardElement fetch + decode lifecycle', () => {
     el.setAttribute('src', './card.xflip');
     await loaded;
     expect(el.face).toBe('front');
-    el.click();
+    el.dispatchEvent(new MouseEvent('dblclick', { bubbles: true }));
     expect(el.face).toBe('back');
-    el.click();
+    el.dispatchEvent(new MouseEvent('dblclick', { bubbles: true }));
     expect(el.face).toBe('front');
     el.remove();
   });
 
-  it('click before load is a no-op', () => {
+  it('double-click before load is a no-op', () => {
     const el = document.createElement(XFLIP_CARD_TAG) as XflipCardElement;
     document.body.append(el);
-    el.click();
+    el.dispatchEvent(new MouseEvent('dblclick', { bubbles: true }));
     expect(el.face).toBe('front');
     expect(el.file).toBeNull();
     el.remove();

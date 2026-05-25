@@ -100,7 +100,9 @@ function readHoloFromMeta(file: XflipFile): readonly XflipHoloLayer[] | null {
     if (typeof blend === 'string') layer.blend = blend;
     out.push(layer);
   }
-  return out.length > 0 ? out : null;
+  // A valid `holo` array (even empty) is an explicit choice — honor it as
+  // "no overlay" rather than falling back to the viewer default.
+  return out;
 }
 
 const HEAD_FLAG_DEFAULT_BACK = 0x01;
@@ -522,7 +524,7 @@ export class XflipCardElement extends HTMLElement {
   #tiltPending: { x: number; y: number } | null = null;
   #gyroAttached = false;
   #gyroGranted = false;
-  #onClick = (): void => {
+  #onDblClick = (): void => {
     if (this.#file) this.toggleFace();
   };
   #onPointerMove = (ev: PointerEvent): void => {
@@ -639,7 +641,7 @@ export class XflipCardElement extends HTMLElement {
   }
 
   connectedCallback(): void {
-    this.addEventListener('click', this.#onClick);
+    this.addEventListener('dblclick', this.#onDblClick);
     this.addEventListener('pointermove', this.#onPointerMove);
     this.addEventListener('pointerleave', this.#onPointerLeave);
     this.addEventListener('pointercancel', this.#onPointerLeave);
@@ -648,7 +650,7 @@ export class XflipCardElement extends HTMLElement {
   }
 
   disconnectedCallback(): void {
-    this.removeEventListener('click', this.#onClick);
+    this.removeEventListener('dblclick', this.#onDblClick);
     this.removeEventListener('pointermove', this.#onPointerMove);
     this.removeEventListener('pointerleave', this.#onPointerLeave);
     this.removeEventListener('pointercancel', this.#onPointerLeave);
