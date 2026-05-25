@@ -1,8 +1,17 @@
 import { XflipCard } from '@xflip/react';
 import { type FormEvent, useEffect, useMemo, useState } from 'react';
-import { addCards, fetchCollection, login, logout, me, register } from './api';
+import {
+  addCards,
+  fetchCollection,
+  fetchOpens,
+  login,
+  logout,
+  me,
+  recordOpen,
+  register,
+} from './api';
 
-type Rarity = 'c' | 'r' | 'sr' | 'ssr' | 'ur';
+type Rarity = 'c' | 'uc' | 'r' | 'sr' | 'ssr' | 'ur' | 'hr';
 
 interface PackDef {
   id: string;
@@ -26,14 +35,25 @@ interface CardDef {
 
 type Phase = 'home' | 'opening' | 'reveal' | 'summary' | 'collection' | 'index';
 
-const RARITY_ORDER: Record<Rarity, number> = { c: 0, r: 1, sr: 2, ssr: 3, ur: 4 };
-// Pull rates: SR+ ~6.8%/card → ~35% chance a pack holds any SR+. No pity floor.
+const RARITY_ORDER: Record<Rarity, number> = {
+  c: 0,
+  uc: 1,
+  r: 2,
+  sr: 3,
+  ssr: 4,
+  ur: 5,
+  hr: 6,
+};
+const ELITE_MIN = RARITY_ORDER.sr; // SR and above = "good" cards (god pack / SR+ stats)
+// Pull rates: SR+ ~8%/card → ~39% chance a pack holds any SR+. No pity floor.
 const RARITY_RATES: Record<Rarity, number> = {
-  c: 0.7,
-  r: 0.232,
+  c: 0.56,
+  uc: 0.24,
+  r: 0.12,
   sr: 0.05,
-  ssr: 0.015,
-  ur: 0.003,
+  ssr: 0.022,
+  ur: 0.007,
+  hr: 0.001,
 };
 const PACK_SIZE = 6;
 const GOD_PACK_RATE = 0.01; // 1% — every card SR or better
@@ -79,9 +99,9 @@ function drawPack(pool: CardDef[]): CardDef[] {
   return cards;
 }
 
-// God pack: only SR / SSR / UR, weighted among those tiers. No C or R.
+// God pack: only SR and above, weighted among those tiers. No C / UC / R.
 function drawGodPack(pool: CardDef[]): CardDef[] {
-  const elite = pool.filter((c) => RARITY_ORDER[c.rarity] >= 2);
+  const elite = pool.filter((c) => RARITY_ORDER[c.rarity] >= ELITE_MIN);
   if (elite.length < 1) return drawPack(pool);
   const cards = drawFrom(elite, ratesOf(elite));
   cards.sort((a, b) => RARITY_ORDER[a.rarity] - RARITY_ORDER[b.rarity]);
@@ -176,6 +196,7 @@ export function App(): JSX.Element {
   const [flipped, setFlipped] = useState(false); // current card revealed?
   const [exiting, setExiting] = useState(false); // current card sliding away?
   const [collection, setCollection] = useState<Record<string, number>>({});
+  const [opens, setOpens] = useState<Record<string, number>>({});
   const [preOwned, setPreOwned] = useState<Set<string>>(new Set());
   const [detail, setDetail] = useState<CardDef | null>(null);
 
@@ -208,11 +229,15 @@ export function App(): JSX.Element {
   useEffect(() => {
     if (!user) {
       setCollection({});
+      setOpens({});
       return;
     }
     fetchCollection()
       .then(setCollection)
       .catch(() => setCollection({}));
+    fetchOpens()
+      .then(setOpens)
+      .catch(() => setOpens({}));
   }, [user]);
 
   const byGid = useMemo(() => {
@@ -242,6 +267,13 @@ export function App(): JSX.Element {
       .then(setCollection)
       .catch(() => {
         /* keep optimistic state; will resync on next load */
+      });
+
+    setOpens((prev) => ({ ...prev, [p.id]: (prev[p.id] ?? 0) + 1 }));
+    recordOpen(p.id)
+      .then(setOpens)
+      .catch(() => {
+        /* keep optimistic count; resyncs on next load */
       });
 
     setActivePack(p);
@@ -341,6 +373,7 @@ export function App(): JSX.Element {
                       <span className="pack-kicker">{p.kicker}</span>
                       <strong>{p.name}</strong>
                       <span className="pack-sub">{subset.length} cards · tap to open</span>
+                      <span className="pack-opens">opened {opens[p.id] ?? 0}×</span>
                     </div>
                   </button>
                 );
@@ -565,7 +598,7 @@ export function App(): JSX.Element {
                     {packOwned}/{packCards.length}
                   </span>
                 </h3>
-                {(['ur', 'ssr', 'sr', 'r', 'c'] as Rarity[]).map((rarity) => {
+                {(['hr', 'ur', 'ssr', 'sr', 'r', 'uc', 'c'] as Rarity[]).map((rarity) => {
                   const cards = packCards.filter((c) => c.rarity === rarity);
                   if (!cards.length) return null;
                   const ownedN = cards.filter((c) => (collection[c.gid] ?? 0) > 0).length;

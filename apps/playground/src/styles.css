@@ -3,10 +3,12 @@
   font-family: ui-sans-serif, system-ui, -apple-system, sans-serif;
 
   --c-c: #64748b;
+  --c-uc: #34d399;
   --c-r: #cbd5e1;
   --c-sr: #38bdf8;
   --c-ssr: #fbbf24;
   --c-ur: #e879f9;
+  --c-hr: #f43f5e;
 }
 
 * {
@@ -217,7 +219,19 @@ h2 {
   margin-top: 4px;
 }
 
-/* opening: tear the pack apart along a jagged rip line */
+.pack-opens {
+  margin-top: 6px;
+  align-self: flex-start;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  padding: 2px 8px;
+  border-radius: 999px;
+  color: #e2e8f0;
+  background: rgba(255, 255, 255, 0.12);
+}
+
+/* opening: split the pack cleanly down the middle and slide the halves apart */
 
 .rip-scene {
   position: relative;
@@ -263,31 +277,25 @@ h2 {
 }
 
 .pack-half.top {
-  clip-path: polygon(
-    0 0, 100% 0, 100% 18%, 90% 22%, 82% 16%, 74% 23%, 66% 17%, 58% 23%,
-    50% 16%, 42% 23%, 34% 16%, 26% 23%, 18% 17%, 10% 22%, 0 18%
-  );
-  animation: rip-top 1.1s cubic-bezier(0.5, 0, 0.7, 0.3) forwards;
+  clip-path: polygon(0 0, 100% 0, 100% 10%, 0 10%);
+  animation: rip-top 1.1s cubic-bezier(0.45, 0, 0.55, 1) forwards;
 }
 
 .pack-half.bottom {
-  clip-path: polygon(
-    0 18%, 10% 22%, 18% 17%, 26% 23%, 34% 16%, 42% 23%, 50% 16%, 58% 23%,
-    66% 17%, 74% 23%, 82% 16%, 90% 22%, 100% 18%, 100% 100%, 0 100%
-  );
-  animation: rip-bottom 1.1s cubic-bezier(0.5, 0, 0.7, 0.3) forwards;
+  clip-path: polygon(0 10%, 100% 10%, 100% 100%, 0 100%);
+  animation: rip-bottom 1.1s cubic-bezier(0.45, 0, 0.55, 1) forwards;
 }
 
 @keyframes rip-top {
-  0% { transform: translate(0, 0) rotate(0); }
-  20% { transform: translate(0, -4px) rotate(-1deg); }
-  100% { transform: translate(-40%, -130%) rotate(-22deg); opacity: 0; }
+  0% { transform: translateY(0); }
+  30% { transform: translateY(0); }
+  100% { transform: translateY(-105%); opacity: 0; }
 }
 
 @keyframes rip-bottom {
-  0% { transform: translate(0, 0) rotate(0); }
-  25% { transform: translate(0, 4px); }
-  100% { transform: translate(0, 60%) scale(0.85); opacity: 0; }
+  0% { transform: translateY(0); }
+  30% { transform: translateY(0); }
+  100% { transform: translateY(125%); opacity: 0; }
 }
 
 .pack-half .pack-label strong {
@@ -414,10 +422,12 @@ h2 {
 /* rarity glow */
 
 .rarity-c { --glow: var(--c-c); }
+.rarity-uc { --glow: var(--c-uc); }
 .rarity-r { --glow: var(--c-r); }
 .rarity-sr { --glow: var(--c-sr); }
 .rarity-ssr { --glow: var(--c-ssr); }
 .rarity-ur { --glow: var(--c-ur); }
+.rarity-hr { --glow: var(--c-hr); }
 
 .deck-card.flipped xflip-card,
 .sum-card xflip-card,
@@ -451,12 +461,17 @@ h2 {
 }
 
 .badge-c { background: var(--c-c); }
+.badge-uc { background: var(--c-uc); }
 .badge-r { background: var(--c-r); }
 .badge-sr { background: var(--c-sr); }
 .badge-ssr { background: var(--c-ssr); }
 .badge-ur {
   background: linear-gradient(90deg, #e879f9, #f0abfc, #c084fc);
   color: #1e1b4b;
+}
+.badge-hr {
+  background: linear-gradient(90deg, #f43f5e, #fb7185, #fda4af);
+  color: #4c0519;
 }
 
 .new-badge {

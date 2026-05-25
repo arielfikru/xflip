@@ -51,3 +51,16 @@ export async function addCards(gids: string[]): Promise<Record<string, number>> 
   });
   return collection;
 }
+
+export async function fetchOpens(): Promise<Record<string, number>> {
+  const { opens } = await request<{ opens: Record<string, number> }>('/opens');
+  return opens;
+}
+
+export async function recordOpen(pack: string): Promise<Record<string, number>> {
+  const { opens } = await request<{ opens: Record<string, number> }>('/opens', {
+    method: 'POST',
+    body: JSON.stringify({ pack }),
+  });
+  return opens;
+}

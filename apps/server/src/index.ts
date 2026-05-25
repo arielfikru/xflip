@@ -4,7 +4,15 @@ import { serveStatic } from '@hono/node-server/serve-static';
 import { type Context, Hono } from 'hono';
 import { deleteCookie, getCookie, setCookie } from 'hono/cookie';
 import { COOKIE_NAME, hashPassword, signToken, verifyPassword, verifyToken } from './auth.js';
-import { addCards, createUser, findUserById, findUserByName, getCollection } from './db.js';
+import {
+  addCards,
+  createUser,
+  findUserById,
+  findUserByName,
+  getCollection,
+  getOpens,
+  recordOpen,
+} from './db.js';
 
 const PORT = Number(process.env.PORT ?? 8787);
 const PROD = process.env.NODE_ENV === 'production';
@@ -80,6 +88,21 @@ app.post('/api/collection', async (c) => {
   if (!Array.isArray(gids) || gids.some((g) => typeof g !== 'string'))
     return c.json({ error: 'gids must be a string array' }, 400);
   return c.json({ collection: addCards(userId, gids) });
+});
+
+app.get('/api/opens', async (c) => {
+  const userId = await currentUserId(c);
+  if (!userId) return c.json({ error: 'Not authenticated' }, 401);
+  return c.json({ opens: getOpens(userId) });
+});
+
+app.post('/api/opens', async (c) => {
+  const userId = await currentUserId(c);
+  if (!userId) return c.json({ error: 'Not authenticated' }, 401);
+  const { pack } = await c.req.json<{ pack?: string }>();
+  if (typeof pack !== 'string' || !pack)
+    return c.json({ error: 'pack must be a non-empty string' }, 400);
+  return c.json({ opens: recordOpen(userId, pack) });
 });
 
 if (PROD) {

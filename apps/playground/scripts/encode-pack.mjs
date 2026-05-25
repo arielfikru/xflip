@@ -26,11 +26,13 @@ const outDir = join(here, '..', 'public', 'gacha', packId);
 mkdirSync(outDir, { recursive: true });
 
 const TIERS = {
-  c: { label: 'Common', rate: 0.6 },
-  r: { label: 'Rare', rate: 0.25 },
-  sr: { label: 'Super Rare', rate: 0.1 },
-  ssr: { label: 'SSR', rate: 0.045 },
-  ur: { label: 'Ultra Rare', rate: 0.005 },
+  c: { label: 'Common', rate: 0.56 },
+  uc: { label: 'Uncommon', rate: 0.24 },
+  r: { label: 'Rare', rate: 0.12 },
+  sr: { label: 'Super Rare', rate: 0.05 },
+  ssr: { label: 'SSR', rate: 0.022 },
+  ur: { label: 'Ultra Rare', rate: 0.007 },
+  hr: { label: 'Hidden Rare', rate: 0.001 },
 };
 
 const SR_PRESETS = ['rainbow', 'aurora'];
@@ -40,6 +42,8 @@ function holoFor(tier, i) {
   switch (tier) {
     case 'c':
       return [];
+    case 'uc':
+      return [{ preset: 'foil', intensity: 0.15 }];
     case 'r':
       return [{ preset: 'foil', intensity: 0.3 }];
     case 'sr':
@@ -47,13 +51,22 @@ function holoFor(tier, i) {
     case 'ssr':
       return [
         { preset: SSR_SIGNATURE[i % SSR_SIGNATURE.length], intensity: 1 },
-        { preset: 'foil', intensity: 0.5 },
+        { preset: 'rainbow', intensity: 0.7 },
+        { preset: 'prism', intensity: 0.55 },
+        { preset: 'foil', intensity: 0.6 },
       ];
     case 'ur':
       return [
         { preset: 'galaxy', intensity: 0.85 },
         { preset: 'pearl', intensity: 0.55 },
         { preset: 'gold', intensity: 0.5 },
+      ];
+    case 'hr':
+      return [
+        { preset: 'galaxy', intensity: 1 },
+        { preset: 'rainbow', intensity: 0.7 },
+        { preset: 'gold', intensity: 0.6 },
+        { preset: 'pearl', intensity: 0.5 },
       ];
     default:
       return [];
@@ -82,12 +95,21 @@ if (!existsSync(indexPath)) {
 }
 const index = JSON.parse(readFileSync(indexPath, 'utf8'));
 
-const backPath = existsSync(join(srcDir, 'back.jpg'))
-  ? join(srcDir, 'back.jpg')
-  : join(gachaDir, 'back.jpg');
+// Shared card back for every pack. Prefer back.png at the repo root (sharp
+// converts it to JPEG below, so an oversized PNG is fine), then fall back.
+const backCandidates = [
+  join(repoRoot, 'back.png'),
+  join(srcDir, 'back.jpg'),
+  join(gachaDir, 'back.jpg'),
+];
+const backPath = backCandidates.find((p) => existsSync(p));
+if (!backPath) {
+  console.error(`no card back found (looked for: ${backCandidates.join(', ')})`);
+  process.exit(1);
+}
 const back = await sharp(readFileSync(backPath))
-  .resize({ width: 720, withoutEnlargement: true })
-  .jpeg({ quality: 82, mozjpeg: true })
+  .resize({ width: 1000, withoutEnlargement: true })
+  .jpeg({ quality: 88, mozjpeg: true })
   .toBuffer();
 writeFileSync(join(outDir, 'back.jpg'), back);
 
@@ -104,8 +126,8 @@ for (const entry of index) {
 
   const raw = readFileSync(join(srcDir, entry.file));
   const front = await sharp(raw)
-    .resize({ width: 600, withoutEnlargement: true })
-    .jpeg({ quality: 82, mozjpeg: true })
+    .resize({ width: 1000, withoutEnlargement: true })
+    .jpeg({ quality: 88, mozjpeg: true })
     .toBuffer();
   const meta = await sharp(front).metadata();
   const holo = holoFor(entry.tier, i);

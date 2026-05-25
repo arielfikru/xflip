@@ -25,6 +25,14 @@ db.exec(`
     updated_at INTEGER NOT NULL,
     PRIMARY KEY (user_id, gid)
   );
+
+  CREATE TABLE IF NOT EXISTS pack_opens (
+    user_id    INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    pack       TEXT NOT NULL,
+    count      INTEGER NOT NULL DEFAULT 0,
+    updated_at INTEGER NOT NULL,
+    PRIMARY KEY (user_id, pack)
+  );
 `);
 
 export interface UserRow {
@@ -44,6 +52,12 @@ const stmtUpsertCard = db.prepare<[number, string, number]>(`
   INSERT INTO collection (user_id, gid, count, updated_at)
   VALUES (?, ?, 1, ?)
   ON CONFLICT(user_id, gid) DO UPDATE SET count = count + 1, updated_at = excluded.updated_at
+`);
+const stmtOpens = db.prepare<[number]>('SELECT pack, count FROM pack_opens WHERE user_id = ?');
+const stmtIncOpen = db.prepare<[number, string, number]>(`
+  INSERT INTO pack_opens (user_id, pack, count, updated_at)
+  VALUES (?, ?, 1, ?)
+  ON CONFLICT(user_id, pack) DO UPDATE SET count = count + 1, updated_at = excluded.updated_at
 `);
 
 export function createUser(username: string, pwHash: string): UserRow {
@@ -74,4 +88,16 @@ const addMany = db.transaction((userId: number, gids: string[]) => {
 export function addCards(userId: number, gids: string[]): Record<string, number> {
   addMany(userId, gids);
   return getCollection(userId);
+}
+
+export function getOpens(userId: number): Record<string, number> {
+  const rows = stmtOpens.all(userId) as { pack: string; count: number }[];
+  const out: Record<string, number> = {};
+  for (const r of rows) out[r.pack] = r.count;
+  return out;
+}
+
+export function recordOpen(userId: number, pack: string): Record<string, number> {
+  stmtIncOpen.run(userId, pack, Date.now());
+  return getOpens(userId);
 }
