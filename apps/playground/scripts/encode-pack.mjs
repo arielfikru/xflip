@@ -98,6 +98,7 @@ const index = JSON.parse(readFileSync(indexPath, 'utf8'));
 // Shared card back for every pack. Prefer back.png at the repo root (sharp
 // converts it to JPEG below, so an oversized PNG is fine), then fall back.
 const backCandidates = [
+  join(repoRoot, 'back_v2.png'),
   join(repoRoot, 'back.png'),
   join(srcDir, 'back.jpg'),
   join(gachaDir, 'back.jpg'),
